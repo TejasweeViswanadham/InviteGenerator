@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Plus, Trash2, ExternalLink, Pencil } from "lucide-react";
 import { EVENT_TYPES } from "@/lib/templates";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -29,7 +30,6 @@ export default function Dashboard() {
   }, []);
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Delete this invitation? This cannot be undone.")) return;
     try {
       await api.delete(`/invitations/${id}`);
       setItems((prev) => prev.filter((x) => x.id !== id));
@@ -115,14 +115,24 @@ export default function Dashboard() {
                       >
                         <Pencil className="h-4 w-4" />
                       </Link>
-                      <button
-                        onClick={() => handleDelete(it.id)}
-                        className="rounded-full p-2 text-stone-500 hover:bg-stone-100 hover:text-red-600 smooth"
-                        data-testid={`invite-delete-${it.id}`}
-                        title="Delete"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <ConfirmDialog
+                        trigger={
+                          <button
+                            className="rounded-full p-2 text-stone-500 hover:bg-stone-100 hover:text-red-600 smooth"
+                            data-testid={`invite-delete-${it.id}`}
+                            title="Delete"
+                            aria-label="Delete invitation"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        }
+                        title="Delete this invitation?"
+                        description={`"${it.title}" and its guests/RSVPs will be permanently removed.`}
+                        confirmLabel="Delete"
+                        destructive
+                        onConfirm={() => handleDelete(it.id)}
+                        confirmTestId={`invite-delete-confirm-${it.id}`}
+                      />
                     </div>
                   </div>
                 </div>

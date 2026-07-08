@@ -16,7 +16,7 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import InviteCanvas from "@/components/InviteCanvas";
 import {
   BACKGROUND_LIBRARY, FONT_OPTIONS, COLOR_SWATCHES, EVENT_TYPES,
-  ENVELOPE_STYLES, EFFECT_OPTIONS, MUSIC_PRESETS, PHOTO_LIBRARY, fileUrl,
+  ENVELOPE_STYLES, EFFECT_OPTIONS, MUSIC_PRESETS as FALLBACK_PRESETS, PHOTO_LIBRARY, fileUrl,
 } from "@/lib/templates";
 import { toPng, toJpeg } from "html-to-image";
 import jsPDF from "jspdf";
@@ -25,7 +25,7 @@ import {
   Users, Video, Music, Image as ImageIcon,
 } from "lucide-react";
 
-const DEBOUNCE = 900;
+const DEBOUNCE = 500;
 
 export default function Editor() {
   const { id } = useParams();
@@ -37,17 +37,35 @@ export default function Editor() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [selectedPhotoId, setSelectedPhotoId] = useState(null);
+  const [musicPresets, setMusicPresets] = useState([]);
   const [aiText, setAiText] = useState({ loading: false, vibe: "elegant", details: "" });
   const [aiImg, setAiImg] = useState({ loading: false, prompt: "soft romantic florals with cream background" });
   const [video, setVideo] = useState({
     loading: false, prompt: "", duration: 4, size: "1024x1792", jobId: null, status: null,
   });
 
+  // Keep latest data in a ref for flush-save on unmount / share.
+  const latestData = useRef(null);
+  useEffect(() => { latestData.current = data; }, [data]);
+
   useEffect(() => {
     (async () => {
       try {
-        const { data: inv } = await api.get(`/invitations/${id}`);
-        setData(inv);
+        const [invRes, presetsRes] = await Promise.all([
+          api.get(`/invitations/${id}`),
+          api.get("/music-presets").catch(() => ({ data: [] })),
+        ]);
+        setData(invRes.data);
+        // Backend presets → convert to frontend shape with backend-served URLs.
+        // Add "No music" option at the top.
+        const backendPresets = (presetsRes.data || []).map((p) => ({
+          id: p.id,
+          label: p.label,
+          category: p.category,
+          url: p.storage_path,
+        }));
+        const presets = [{ id: "none", label: "No music", url: "" }, ...backendPresets];
+        setMusicPresets(presets.length > 1 ? presets : FALLBACK_PRESETS);
       } catch {
         toast.error("Invitation not found");
         navigate("/dashboard");
@@ -55,7 +73,8 @@ export default function Editor() {
         setLoading(false);
       }
     })();
-  }, [id, navigate]);
+    // eslint-disable-next-line
+  }, [id]);
 
   useEffect(() => {
     if (!data || loading) return;
@@ -64,6 +83,31 @@ export default function Editor() {
     return () => saveTimer.current && clearTimeout(saveTimer.current);
     // eslint-disable-next-line
   }, [data]);
+
+  // Flush save on unmount (route change / tab close) using sendBeacon-like fallback.
+  useEffect(() => {
+    return () => {
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+      const snap = latestData.current;
+      if (!snap) return;
+      const payload = { ...snap };
+      ["id", "user_id", "share_id", "created_at", "updated_at"].forEach((k) => delete payload[k]);
+      // Best-effort synchronous-ish save with keepalive fetch
+      try {
+        const token = localStorage.getItem("ic_token");
+        fetch(`${process.env.REACT_APP_BACKEND_URL}/api/invitations/${id}`, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify(payload),
+          keepalive: true,
+        }).catch(() => {});
+      } catch {}
+    };
+    // eslint-disable-next-line
+  }, [id]);
 
   const set = (patch) => setData((prev) => ({ ...prev, ...patch }));
 
@@ -241,6 +285,9 @@ export default function Editor() {
     } catch { toast.error("PDF export failed"); }
   };
   const copyShareLink = async () => {
+    // Flush pending save first so guests see the latest content.
+    if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
+    await save(false);
     const url = `${window.location.origin}/i/${data.share_id}`;
     try {
       await navigator.clipboard.writeText(url);
@@ -430,18 +477,22 @@ export default function Editor() {
               {/* Music */}
               <section>
                 <div className="chip-label mb-3 flex items-center gap-2"><Music className="h-3.5 w-3.5" /> Music (public view)</div>
-                <Field label="Preset">
+                <Field label="Preset (self-hosted)">
                   <Select
-                    value={MUSIC_PRESETS.find((m) => m.url === data.music_url)?.id || (data.music_url ? "upload" : "none")}
+                    value={musicPresets.find((m) => m.url === data.music_url)?.id || (data.music_url ? "upload" : "none")}
                     onValueChange={(id) => {
-                      const preset = MUSIC_PRESETS.find((m) => m.id === id);
+                      const preset = musicPresets.find((m) => m.id === id);
                       if (preset) setMusic(preset.label, preset.url);
                     }}
                   >
                     <SelectTrigger data-testid="music-preset"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {MUSIC_PRESETS.map((m) => <SelectItem key={m.id} value={m.id}>{m.label}</SelectItem>)}
-                      {data.music_url && !MUSIC_PRESETS.find((m) => m.url === data.music_url) && (
+                      {musicPresets.map((m) => (
+                        <SelectItem key={m.id} value={m.id}>
+                          {m.label}{m.category === "indian" ? " · 🕉" : ""}
+                        </SelectItem>
+                      ))}
+                      {data.music_url && !musicPresets.find((m) => m.url === data.music_url) && (
                         <SelectItem value="upload">Uploaded: {data.music_label}</SelectItem>
                       )}
                     </SelectContent>

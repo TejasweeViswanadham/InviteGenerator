@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Mail, Trash2, Send, Eye, Users, CheckCircle, HelpCircle, XCircle, Clock, ArrowLeft } from "lucide-react";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function Guests() {
   const { id } = useParams();
@@ -86,7 +87,6 @@ export default function Guests() {
   };
 
   const removeGuest = async (guestId) => {
-    if (!window.confirm("Remove this guest?")) return;
     try {
       await api.delete(`/invitations/${id}/guests/${guestId}`);
       load();
@@ -187,9 +187,23 @@ export default function Guests() {
                       <Button size="sm" variant="ghost" onClick={() => sendInvites([g.id])} disabled={sending} className="rounded-full text-xs" data-testid={`send-guest-${g.id}`}>
                         <Mail className="mr-1 h-3 w-3" /> Send
                       </Button>
-                      <button onClick={() => removeGuest(g.id)} className="rounded-full p-1.5 text-stone-500 hover:bg-stone-100 hover:text-red-600 smooth" data-testid={`remove-guest-${g.id}`}>
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                      <ConfirmDialog
+                        trigger={
+                          <button
+                            className="rounded-full p-1.5 text-stone-500 hover:bg-stone-100 hover:text-red-600 smooth"
+                            data-testid={`remove-guest-${g.id}`}
+                            aria-label="Remove guest"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        }
+                        title="Remove this guest?"
+                        description={`${g.name} (${g.email}) will be removed from the guest list.`}
+                        confirmLabel="Remove"
+                        destructive
+                        onConfirm={() => removeGuest(g.id)}
+                        confirmTestId={`remove-guest-confirm-${g.id}`}
+                      />
                     </div>
                   </li>
                 ))}

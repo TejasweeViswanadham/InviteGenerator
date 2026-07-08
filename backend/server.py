@@ -710,19 +710,24 @@ async def download_file(
     record = await db.files.find_one({"storage_path": path, "is_deleted": False}, {"_id": 0})
     if not record:
         raise HTTPException(status_code=404, detail="File not found")
-    # If the file is referenced by any published invitation of any kind, it's public-readable
-    # (invitation photos + audio must be reachable from a public share link too).
-    referenced = await db.invitations.find_one({
-        "$or": [
-            {"photos.url": {"$regex": path}},
-            {"music_url": {"$regex": path}},
-        ]
-    }, {"_id": 0, "id": 1})
-    if not referenced:
-        # Otherwise require auth (owner only)
-        user = await _get_user_from_query_or_header(authorization, auth)
-        if user["id"] != record["user_id"]:
-            raise HTTPException(status_code=403, detail="Forbidden")
+    # Public curated presets are always readable.
+    if record.get("is_public_preset"):
+        pass
+    else:
+        # If the file is referenced by any published invitation of any kind,
+        # it's public-readable (needed for public share links).
+        referenced = await db.invitations.find_one({
+            "$or": [
+                {"photos.url": {"$regex": path}},
+                {"music_url": {"$regex": path}},
+                {"video_url": {"$regex": path}},
+            ]
+        }, {"_id": 0, "id": 1})
+        if not referenced:
+            # Otherwise require auth (owner only)
+            user = await _get_user_from_query_or_header(authorization, auth)
+            if user["id"] != record["user_id"]:
+                raise HTTPException(status_code=403, detail="Forbidden")
     try:
         data, ct = await asyncio.to_thread(get_object, path)
     except Exception as e:
@@ -890,6 +895,114 @@ async def video_status(job_id: str, user: dict = Depends(get_current_user)):
 # --------------------------------------------------------------------------
 # 10. App wiring
 # --------------------------------------------------------------------------
+# -------- Curated music preset seeding (self-hosted on object storage) ----
+CURATED_PRESETS = [
+    {"id": "piano",     "label": "Ambient Piano",      "category": "generic",
+     "source": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3"},
+    {"id": "elegant",   "label": "Elegant Strings",    "category": "generic",
+     "source": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3"},
+    {"id": "cinematic", "label": "Cinematic",          "category": "generic",
+     "source": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3"},
+    {"id": "uplifting", "label": "Uplifting",          "category": "generic",
+     "source": "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3"},
+    # Wikimedia Commons — public domain / CC / CC0.
+    # We use Special:FilePath which redirects to the current file URL.
+    {"id": "sitar",         "label": "Sitar (Raga Yaman)",  "category": "indian",
+     "source": "https://commons.wikimedia.org/wiki/Special:FilePath/Sitar_sample_yaman.ogg"},
+    {"id": "bell",          "label": "Ceremonial Bell",     "category": "indian",
+     "source": "https://commons.wikimedia.org/wiki/Special:FilePath/Synthetic_bell_sound.ogg"},
+    {"id": "temple_bell",   "label": "Temple Bell",         "category": "indian",
+     "source": "https://commons.wikimedia.org/wiki/Special:FilePath/Sound_Effect_-_Door_Bell.ogg"},
+]
+
+_MIME_BY_EXT = {"mp3": "audio/mpeg", "ogg": "audio/ogg", "wav": "audio/wav", "m4a": "audio/mp4"}
+
+
+def _seed_one_preset(preset: dict) -> Optional[dict]:
+    """Download source URL and upload to object storage. Returns preset record or None on failure."""
+    try:
+        import requests as _req
+        headers = {
+            "User-Agent": "InviteCraftBot/1.0 (https://invitecraft.example; contact@invitecraft.example)",
+            "Accept": "*/*",
+        }
+        resp = _req.get(preset["source"], timeout=45, headers=headers, allow_redirects=True)
+        resp.raise_for_status()
+        data = resp.content
+        if len(data) < 1024 or len(data) > 15 * 1024 * 1024:
+            logger.warning("Preset %s size %s out of range", preset["id"], len(data))
+            return None
+        # Use the final URL after redirects to determine the file extension
+        final_url = resp.url or preset["source"]
+        ext = final_url.rsplit(".", 1)[-1].lower().split("?")[0]
+        if ext not in _MIME_BY_EXT:
+            ext = "mp3"
+        content_type = _MIME_BY_EXT[ext]
+        path = f"{APP_NAME}/presets/audio/{preset['id']}.{ext}"
+        put_object(path, data, content_type)
+        return {
+            "id": preset["id"],
+            "label": preset["label"],
+            "category": preset["category"],
+            "storage_path": path,
+            "content_type": content_type,
+            "size": len(data),
+            "created_at": _now_iso(),
+        }
+    except Exception as e:
+        logger.warning("Preset %s seed failed: %s", preset["id"], e)
+        return None
+
+
+async def _seed_music_presets():
+    """Idempotent — only seeds presets missing from DB.
+    Registers each in db.files so the /api/files endpoint can serve them publicly
+    when they are referenced by any invitation's music_url."""
+    try:
+        for preset in CURATED_PRESETS:
+            existing = await db.music_presets.find_one({"id": preset["id"]}, {"_id": 0})
+            if existing and existing.get("storage_path"):
+                continue
+            record = await asyncio.to_thread(_seed_one_preset, preset)
+            if not record:
+                continue
+            await db.music_presets.update_one(
+                {"id": record["id"]},
+                {"$set": record},
+                upsert=True,
+            )
+            # Register as a "system" file so /api/files can serve it.
+            # We tag it with a magic user_id so ownership checks can be bypassed
+            # when path is referenced by an invitation (public music).
+            file_id = str(uuid.uuid4())
+            await db.files.update_one(
+                {"storage_path": record["storage_path"]},
+                {"$setOnInsert": {
+                    "id": file_id,
+                    "user_id": "__system__",
+                    "kind": "audio",
+                    "storage_path": record["storage_path"],
+                    "original_filename": f"{record['id']}.{record['storage_path'].rsplit('.', 1)[-1]}",
+                    "content_type": record["content_type"],
+                    "size": record["size"],
+                    "is_deleted": False,
+                    "is_public_preset": True,
+                    "created_at": _now_iso(),
+                }},
+                upsert=True,
+            )
+            logger.info("Seeded music preset: %s", record["id"])
+    except Exception as e:
+        logger.exception("Music preset seeding failed: %s", e)
+
+
+@api_router.get("/music-presets")
+async def music_presets():
+    cursor = db.music_presets.find({}, {"_id": 0}).sort("category", 1)
+    presets = await cursor.to_list(50)
+    return presets
+
+
 @api_router.get("/")
 async def root():
     return {"message": "InviteCraft API", "status": "ok", "resend_configured": bool(RESEND_API_KEY)}
@@ -901,6 +1014,8 @@ async def _startup():
         init_storage()
     except Exception as e:
         logger.warning("Storage init failed at startup: %s", e)
+    # Kick off music preset seeding in the background so startup isn't blocked
+    asyncio.create_task(_seed_music_presets())
 
 
 @app.on_event("shutdown")
