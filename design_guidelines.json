@@ -1,0 +1,75 @@
+{
+  "theme": "Light",
+  "archetype": "Organic & Earthy / Luxury (Editorial Magazine Blend)",
+  "emotional_tone": "Joyful, elegant, premium, warm",
+  "typography": {
+    "fonts": {
+      "heading": "Cormorant Garamond",
+      "body": "Outfit",
+      "mono": "JetBrains Mono"
+    },
+    "rules": {
+      "h1": "text-5xl sm:text-6xl tracking-tighter font-light",
+      "h2": "text-3xl sm:text-4xl tracking-tight font-normal",
+      "h3": "text-xl sm:text-2xl font-medium",
+      "body": "text-base leading-relaxed",
+      "labels": "text-xs tracking-[0.2em] uppercase font-medium"
+    }
+  },
+  "colors": {
+    "background": "#FAF9F6",
+    "surface": "#FFFFFF",
+    "primary": "#D97757",
+    "secondary": "#C89F59",
+    "text_primary": "#1A1A1A",
+    "text_secondary": "#5C5C5C",
+    "border": "#E5E5E0"
+  },
+  "spacing_and_layout": {
+    "general": "Generous Spacing Philosophy. Use p-8 or p-12 for containers.",
+    "borders": "1px solid border-stone-200. No heavy dropshadows, only soft ambient shadows.",
+    "radius": "rounded-xl or rounded-2xl for surfaces, rounded-full for primary buttons."
+  },
+  "components": {
+    "buttons": "Shadcn buttons customized with rounded-full, warm primary colors, and hover:scale-[1.02] transition.",
+    "cards": "Minimalist, flat white surfaces on bone-white backgrounds with 1px subtle border.",
+    "editor_canvas": "Large centralized white canvas with soft drop-shadow, surrounded by spacious controls.",
+    "navigation": "Crystal Glass or Solid Bone White with 1px bottom border. Never fully transparent.",
+    "forms": "Customize Shadcn inputs with rounded-lg, 1px border, and focus:ring-1 focus:ring-primary."
+  },
+  "interactions_and_motion": {
+    "hover": "Subtle translation (-translate-y-0.5) and shadow enhancement.",
+    "transitions": "All interactive elements must use smooth specific transitions e.g., transition: transform 0.2s ease, opacity 0.2s ease."
+  },
+  "testing": {
+    "data_testid": "All interactive and key informational elements MUST include a data-testid attribute (kebab-case, role-based)."
+  },
+  "media": {
+    "instructions_to_main_agent": "Use these exact URLs for preset backgrounds and templates. Do not use placeholders.",
+    "image_urls": {
+      "wedding_presets": [
+        "https://images.unsplash.com/photo-1519225421980-715cb0215aed?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHwxfHxlbGVnYW50JTIwd2VkZGluZyUyMHJlY2VwdGlvbiUyMHRhYmxlJTIwc2V0dGluZ3xlbnwwfHx8fDE3ODM1MDU2MTJ8MA&ixlib=rb-4.1.0&q=85",
+        "https://images.unsplash.com/photo-1710587385270-08f30d66bf31?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Njd8MHwxfHNlYXJjaHw0fHxlbGVnYW50JTIwd2VkZGluZyUyMHJlY2VwdGlvbiUyMHRhYmxlJTIwc2V0dGluZ3xlbnwwfHx8fDE3ODM1MDU2MTJ8MA&ixlib=rb-4.1.0&q=85"
+      ],
+      "birthday_presets": [
+        "https://images.unsplash.com/photo-1741969494307-55394e3e4071?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2OTV8MHwxfHNlYXJjaHw0fHxqb3lmdWwlMjBiaXJ0aGRheSUyMHBhcnR5JTIwZGVjb3JhdGlvbnN8ZW58MHx8fHwxNzgzNTA1NjEyfDA&ixlib=rb-4.1.0&q=85",
+        "https://images.unsplash.com/photo-1531956531700-dc0ee0f1f9a5?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA2OTV8MHwxfHNlYXJjaHwxfHxqb3lmdWwlMjBiaXJ0aGRheSUyMHBhcnR5JTIwZGVjb3JhdGlvbnN8ZW58MHx8fHwxNzgzNTA1NjEyfDA&ixlib=rb-4.1.0&q=85"
+      ],
+      "corporate_presets": [
+        "https://images.unsplash.com/photo-1531058020387-3be344556be6?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzh8MHwxfHNlYXJjaHwxfHxtaW5pbWFsaXN0JTIwY29ycG9yYXRlJTIwZXZlbnQlMjBjb25mZXJlbmNlfGVufDB8fHx8MTc4MzUwNTYxMXww&ixlib=rb-4.1.0&q=85",
+        "https://images.unsplash.com/photo-1561489404-42f13a2f09a2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2Nzh8MHwxfHNlYXJjaHw0fHxtaW5pbWFsaXN0JTIwY29ycG9yYXRlJTIwZXZlbnQlMjBjb25mZXJlbmNlfGVufDB8fHx8MTc4MzUwNTYxMXww&ixlib=rb-4.1.0&q=85"
+      ],
+      "baby_shower_presets": [
+        "https://images.unsplash.com/photo-1644785421448-e1b038f2381e?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1OTN8MHwxfHNlYXJjaHwyfHxiYWJ5JTIwc2hvd2VyJTIwZGVjb3JhdGlvbiUyMG5ldXRyYWx8ZW58MHx8fHwxNzgzNTA1NjIxfDA&ixlib=rb-4.1.0&q=85"
+      ],
+      "anniversary_presets": [
+        "https://images.unsplash.com/photo-1612145463153-e97c1774fe2a?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHwyfHxsdXh1cnklMjBhbm5pdmVyc2FyeSUyMHBhcnR5fGVufDB8fHx8MTc4MzUwNTYyMXww&ixlib=rb-4.1.0&q=85",
+        "https://images.unsplash.com/photo-1707831853477-545a84511e57?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NTJ8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBhbm5pdmVyc2FyeSUyMHBhcnR5fGVufDB8fHx8MTc4MzUwNTYyMXww&ixlib=rb-4.1.0&q=85"
+      ],
+      "hero_backgrounds": [
+        "https://images.unsplash.com/photo-1695041713023-c08f364a4ea2?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1ODh8MHwxfHNlYXJjaHwzfHxhYnN0cmFjdCUyMHBhcGVyJTIwdGV4dHVyZSUyMHdhcm18ZW58MHx8fHwxNzgzNTA1NjIxfDA&ixlib=rb-4.1.0&q=85",
+        "https://images.unsplash.com/photo-1619043518800-7f14be467dca?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzJ8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBzaWxrJTIwZmFicmljJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3ODM1MDU2MjF8MA&ixlib=rb-4.1.0&q=85"
+      ]
+    }
+  }
+}
