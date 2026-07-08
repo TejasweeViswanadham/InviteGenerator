@@ -1,0 +1,39 @@
+{
+  "summary": "InviteCraft v2 tested end-to-end. 46/46 backend pytest cases pass (28 new v2 + 18 v1 regression) covering auth, invitations CRUD, uploads (photo/audio with content-type + size validation), file serving (owner/query-token/non-owner/public-when-referenced), guest CRUD + dedupe, public RSVP (create/update/case-insensitive email/invalid status), analytics, send-invites graceful 400 (no RESEND_API_KEY), Sora 2 video job creation (queued, invalid duration 400, status endpoint), cross-user isolation, AI text (Claude) + image (Gemini). Frontend Playwright flow verified: register→templates→editor with all 5 tabs, envelope=classic set from Design tab, photo added to canvas from library (invite-photo count 0→1) with size/shape controls, music preset selected, effect (petals) + scratch toggle enabled, AI empty video prompt shows error toast; on /i/{shareId} envelope + effects-layer + music-player + envelope-open-btn all render, envelope opens to reveal scratch-reveal overlay; RSVP form submits with thank-you shown; on /invite/{id}/guests all 5 stat cards render, add-guest works, send-all triggers 400 'Email sending isn't configured' as expected.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [
+      {"component": "Editor AI video button", "issue": "After clicking 'Generate video' with a valid prompt, button reverted to 'Generate video' after ~5s instead of showing 'Status: queued/running'. Backend job IS created (verified by pytest); likely the pollVideo tick observes an early failed/done state, or startVideo's success path never sets loading=false so state may be transient. Non-blocking — job creation itself succeeds.", "selector": "[data-testid=ai-generate-video-btn]", "priority": "LOW"}
+    ],
+    "integration_issues": [],
+    "design_issues": [
+      {"screen": "Guests page", "issues": ["removeGuest uses native window.confirm() which is not accessible/testable and inconsistent with the rest of the shadcn UI — consider AlertDialog for parity"]}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/backend_test.py",
+    "/app/backend/tests/backend_v2_test.py",
+    "/app/test_reports/pytest/pytest_v2_results.xml"
+  ],
+  "action_items": [
+    "(Optional) Investigate why editor's video button text does not stay on 'Status: queued' after starting a job — user may briefly see 'Generate video' again while backend still processes.",
+    "(Optional) Replace window.confirm in Guests.removeGuest with an AlertDialog for consistency + testability."
+  ],
+  "critical_code_review_comments": [
+    "storage.py uses synchronous `requests` inside FastAPI event loop through asyncio.to_thread wrappers in server.py — good pattern, but no connection pool timeout retries for transient object-storage 5xx.",
+    "server.py file size (~920 lines) is above the 700-line guideline; consider splitting into routers/{auth,invitations,guests,uploads,ai}.py.",
+    "download_file in server.py uses `$regex: path` on invitation photos.url — a raw regex without escaping user-controlled `path`. Uploaded storage paths only contain UUID/user-id segments so exploitability is low, but escaping (re.escape) would be safer.",
+    "CORS allow_origins=* with allow_credentials=false is safe now, but any future switch to credentials will break spec.",
+    "Editor.jsx `startVideo` never resets `video.loading=false` on the happy path — it depends on pollVideo terminal states. If pollVideo silently gives up after 90 attempts, the button stays disabled. Consider a cleaner state machine or resetting loading after job creation."
+  ],
+  "updated_files": [
+    "/app/backend/tests/backend_v2_test.py (new)"
+  ],
+  "success_rate": {"backend": "100% (46/46)", "frontend": "100% of required flows verified"},
+  "test_credentials": "Fresh per-test users via /api/auth/register (see /app/memory/test_credentials.md).",
+  "seed_data_creation": "None. Each test creates its own users/invitations/guests.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "backend_v2_test.py covers: uploads (photo/audio incl. 413/415), file serving (owner bearer, owner ?auth=, non-owner 403, referenced-invitation public), invitation PATCH v2 fields (envelope_style, effects, music_url, scratch_reveal, video_url), guests bulk add + dedupe (case-insensitive email), guest list owner-only + delete, public RSVP (new/existing/invalid-status/404), view tracking + analytics (views_total, views_unique, guests_total, rsvp_counts, views_by_day), send-invites 400 without RESEND_API_KEY, Sora 2 video job creation (queued, invalid-duration 400, status endpoint), cross-user isolation. Editor.jsx video-button minor state-machine issue noted. Guests page uses native window.confirm for guest deletion — Playwright rejects dialogs by default, so tests targeting remove-guest need `page.on('dialog', d => d.accept())`.",
+  "rca of the issue": "N/A — no blocking bugs. Only minor UX notes."
+}

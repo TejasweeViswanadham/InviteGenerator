@@ -1,4 +1,4 @@
-// Preset templates + curated stock background library grouped by event type.
+// Preset templates + curated stock library grouped by event type.
 export const EVENT_TYPES = [
   { id: "wedding", label: "Wedding" },
   { id: "birthday", label: "Birthday" },
@@ -36,6 +36,26 @@ export const HERO_BACKGROUNDS = [
   "https://images.unsplash.com/photo-1619043518800-7f14be467dca?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjAzMzJ8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBzaWxrJTIwZmFicmljJTIwYmFja2dyb3VuZHxlbnwwfHx8fDE3ODM1MDU2MjF8MA&ixlib=rb-4.1.0&q=85",
 ];
 
+// Curated photo library — clip-art / portrait style shots users can drop on canvas.
+export const PHOTO_LIBRARY = {
+  temple: [
+    "https://images.unsplash.com/photo-1466442929976-97f336a657be?w=600&q=80",
+    "https://images.unsplash.com/photo-1524492514790-8e5b6bd11a1a?w=600&q=80",
+  ],
+  south_indian: [
+    "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=600&q=80",
+    "https://images.unsplash.com/photo-1610030006547-9ce7b8a1a4b6?w=600&q=80",
+  ],
+  couple: [
+    "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80",
+    "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&q=80",
+  ],
+  florals: [
+    "https://images.unsplash.com/photo-1587556930721-a2e0e7c8de0f?w=600&q=80",
+    "https://images.unsplash.com/photo-1416772602849-3e208d0e7f4b?w=600&q=80",
+  ],
+};
+
 export const FONT_OPTIONS = [
   { id: "cormorant", label: "Cormorant (serif)", value: "'Cormorant Garamond', serif" },
   { id: "playfair", label: "Playfair (serif)", value: "'Playfair Display', serif" },
@@ -48,6 +68,31 @@ export const FONT_OPTIONS = [
 export const COLOR_SWATCHES = [
   "#D97757", "#C89F59", "#8A6D3B", "#4A6741", "#2C5F5D",
   "#5B4A8C", "#A03E3E", "#1A1A1A", "#F1E9DB", "#FFFFFF",
+];
+
+export const ENVELOPE_STYLES = [
+  { id: "none", label: "None (open directly)" },
+  { id: "classic", label: "Classic Paper" },
+  { id: "indian", label: "Shubh Vivah (gold + red)" },
+  { id: "modern", label: "Minimal Modern" },
+];
+
+export const EFFECT_OPTIONS = [
+  { id: "petals", label: "Falling Rose Petals" },
+  { id: "flowers", label: "Floating Flowers" },
+  { id: "confetti", label: "Confetti Rain" },
+  { id: "sparkles", label: "Golden Sparkles" },
+  { id: "bells", label: "Temple Bells (visual)" },
+];
+
+// Music preset library — SoundHelix public MP3s (no auth needed, generic music)
+// plus placeholder for uploads.
+export const MUSIC_PRESETS = [
+  { id: "none", label: "No music", url: "" },
+  { id: "piano", label: "Ambient Piano", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" },
+  { id: "uplifting", label: "Uplifting", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3" },
+  { id: "elegant", label: "Elegant Strings", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-11.mp3" },
+  { id: "cinematic", label: "Cinematic", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-14.mp3" },
 ];
 
 // Preset "starter" templates users can pick from.
@@ -94,6 +139,8 @@ export const TEMPLATES = [
       heading_font: "'Playfair Display', serif",
       body_font: "'Outfit', sans-serif",
       overlay_opacity: 0.45,
+      envelope_style: "indian",
+      effects: ["petals"],
     },
   },
   {
@@ -116,6 +163,8 @@ export const TEMPLATES = [
       heading_font: "'Playfair Display', serif",
       body_font: "'Outfit', sans-serif",
       overlay_opacity: 0.45,
+      envelope_style: "modern",
+      effects: ["confetti"],
     },
   },
   {
@@ -160,6 +209,7 @@ export const TEMPLATES = [
       heading_font: "'Cormorant Garamond', serif",
       body_font: "'Outfit', sans-serif",
       overlay_opacity: 0.35,
+      effects: ["sparkles"],
     },
   },
   {
@@ -182,6 +232,7 @@ export const TEMPLATES = [
       heading_font: "'Bodoni Moda', serif",
       body_font: "'Outfit', sans-serif",
       overlay_opacity: 0.55,
+      envelope_style: "classic",
     },
   },
   {
@@ -210,4 +261,14 @@ export const TEMPLATES = [
 
 export function templatesForType(type) {
   return TEMPLATES.filter((t) => t.event_type === type);
+}
+
+// Build a full file URL usable by <img>/<audio> for a stored file path
+export function fileUrl(pathOrUrl) {
+  if (!pathOrUrl) return "";
+  if (pathOrUrl.startsWith("data:") || pathOrUrl.startsWith("http")) return pathOrUrl;
+  const backend = process.env.REACT_APP_BACKEND_URL;
+  const token = localStorage.getItem("ic_token");
+  const qs = token ? `?auth=${encodeURIComponent(token)}` : "";
+  return `${backend}/api/files/${pathOrUrl}${qs}`;
 }

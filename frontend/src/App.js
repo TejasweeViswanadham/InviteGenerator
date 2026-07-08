@@ -9,6 +9,7 @@ import Dashboard from "@/pages/Dashboard";
 import Templates from "@/pages/Templates";
 import Editor from "@/pages/Editor";
 import PublicView from "@/pages/PublicView";
+import Guests from "@/pages/Guests";
 
 function Protected({ children }) {
   const { user } = useAuth();
@@ -26,30 +27,10 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/i/:shareId" element={<PublicView />} />
-            <Route
-              path="/dashboard"
-              element={
-                <Protected>
-                  <Dashboard />
-                </Protected>
-              }
-            />
-            <Route
-              path="/templates"
-              element={
-                <Protected>
-                  <Templates />
-                </Protected>
-              }
-            />
-            <Route
-              path="/editor/:id"
-              element={
-                <Protected>
-                  <Editor />
-                </Protected>
-              }
-            />
+            <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
+            <Route path="/templates" element={<Protected><Templates /></Protected>} />
+            <Route path="/editor/:id" element={<Protected><Editor /></Protected>} />
+            <Route path="/invite/:id/guests" element={<Protected><Guests /></Protected>} />
           </Routes>
         </BrowserRouter>
         <Toaster position="top-center" richColors closeButton />
