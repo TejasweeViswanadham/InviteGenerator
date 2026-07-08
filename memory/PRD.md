@@ -1,59 +1,53 @@
 # InviteCraft — Product Requirements Document
 
 ## Original Problem Statement
-"Build me an app where user can create a templates, invitations for events, add images, adding files, everything in a single app and the code based on the python, and frontend web technologies, free db to store using flask, django. Example: I can create/generate a wedding invite, or birthday invitation, or videos something like that."
+An app to create/generate invitations (weddings, birthdays, baby showers, anniversaries, corporate) with templates, images, files, videos.
 
 ## Architecture
-- **Backend**: FastAPI (Python) at `/app/backend/server.py`, all routes under `/api`
-- **Frontend**: React 19 + Vite/CRA + Tailwind + shadcn/ui at `/app/frontend/`
-- **DB**: MongoDB (free/local) via Motor async driver
-- **AI**: `emergentintegrations` — Claude Sonnet 4.6 for copy, Gemini 3.1 Flash Image (Nano Banana) for backgrounds
-- **Auth**: JWT (email + password + bcrypt)
-- **Export**: html-to-image (PNG/JPG) + jsPDF (PDF), shareable link `/i/{share_id}`
+- **Backend**: FastAPI at `/app/backend/server.py`, MongoDB via Motor, all routes under `/api`
+- **Frontend**: React 19 + Tailwind + shadcn/ui
+- **AI**: Emergentintegrations — Claude Sonnet 4.6 (text), Gemini 3.1 Flash Image / Nano Banana (image), Sora 2 (video)
+- **Storage**: Emergent Object Storage for uploaded photos, audio, and generated videos
+- **Email**: Resend (API key optional — endpoint gracefully errors without it)
+- **Auth**: JWT + bcrypt
 
-## User Personas
-1. **Event host** (bride, parent, HR manager) — non-designer needing beautiful invites quickly
-2. **Small studio / freelancer** — reuses templates for multiple clients
+## Implemented (v1 + v2)
+### v1 — Feb 2026
+- JWT auth, invitations CRUD, public share, 7 curated templates
+- Editor: content, design (fonts/colors/overlay), background library, AI text (Claude), AI background (Gemini Nano Banana)
+- Export PNG / JPG / PDF, public share link at `/i/{shareId}`
 
-## Core Requirements (static)
-- Multi-event support: wedding, birthday, baby shower, anniversary, corporate
-- AI copy generation with vibe control
-- AI background generation
-- Preset background library per event type
-- Live editor with fonts, colors, overlay
-- Auto-save
-- Export: PNG, JPG, PDF, shareable public link
-
-## What's been implemented (2026-02 — MVP)
-- JWT auth (register / login / me) with bcrypt
-- Invitations CRUD + public share endpoint
-- AI text (Claude) and AI image (Gemini Nano Banana) endpoints
-- Landing page with hero, features, gallery, CTA
-- Register / Login pages
-- Dashboard (list, delete, share, edit)
-- Template gallery with 7 curated starters across 5 event types
-- Full editor: 4 tabs (Content, Design, Background, AI), live preview canvas, auto-save, color swatches, 6 font choices, overlay opacity slider
-- Export dropdown: PNG / JPG / PDF, plus copy share link
-- Public share view at `/i/{shareId}`
-- All 18 backend tests pass; frontend flow verified end-to-end
+### v2 — Feb 2026
+- **Photos on canvas**: curated library (temple, south indian, couple, florals) + user upload via Emergent Object Storage; drag to reposition, resize, rotate, choose shape (circle/rounded/rect)
+- **Envelope styles**: Classic Paper, Shubh Vivah (gold+red), Minimal Modern — with animated flap opening
+- **Falling effects layer**: rose petals, floating flowers, confetti, golden sparkles, temple bells
+- **Music player**: preset library (Ambient Piano, Uplifting, Elegant Strings, Cinematic via SoundHelix) + upload MP3/WAV; autoplay muted with unmute control
+- **Scratch-to-reveal** overlay on the public invite
+- **Guest list**: single/bulk add, dedupe by email, per-guest send
+- **RSVP tracking**: public RSVP form with yes/maybe/no + optional note; case-insensitive email matching
+- **Email delivery** via Resend (graceful "not configured" error when key missing)
+- **View analytics**: total views, unique IP-hashed views, views-by-day, RSVP breakdown
+- **AI video (Sora 2)**: background job pattern, poll `/api/ai/video-status/{job_id}`, saved to object storage, playable on public view
+- New pages: `/invite/:id/guests` (Guests & RSVP dashboard)
+- 46/46 backend tests pass; frontend E2E flows verified
 
 ## Backlog
 ### P1
-- Multi-image / photo insert into canvas (photo of couple, guest of honor)
-- More templates (10+ per event type)
+- Enable Resend once user provides API key + verified domain
+- More music presets (temple bells, shehnai, sitar) via a curated CDN
+- More envelope styles (kraft paper, watercolor)
 - Duplicate invitation
-- Guest list + RSVP tracking (light CRM)
-- Send invites via email (Resend integration)
+- Guest RSVP requires email verification (magic link) for accuracy
 
 ### P2
-- Custom fonts upload / Google Fonts picker
+- Text elements on canvas beyond the fixed template layout
+- Multiple photos with z-order controls
+- Send WhatsApp invites (Twilio) with the public URL
+- Payments (Stripe) — paid premium templates + video-invite credits
 - Team / collaborative editing
-- Video invitations (short animated card via Sora 2)
-- Analytics: track how many guests viewed the share link
-- Payments (Stripe) for premium templates
 
 ## Next Tasks
-1. Add duplicate-invitation endpoint + button
-2. Photo insert (single user photo on canvas)
-3. Email delivery to guest list
-4. Video invite generation
+1. Wire Resend API key + verified sending domain
+2. Add temple-bell / shehnai audio presets (host on object storage)
+3. Duplicate invitation endpoint + button
+4. Better mobile-responsive editor

@@ -189,7 +189,7 @@ export default function Editor() {
       pollVideo(job.job_id);
     } catch (e) {
       toast.error(e?.response?.data?.detail || "Video job failed to start");
-      setVideo((v) => ({ ...v, loading: false }));
+      setVideo((v) => ({ ...v, loading: false, jobId: null, status: null }));
     }
   };
 
@@ -561,9 +561,9 @@ export default function Editor() {
                     </Select>
                   </Field>
                 </div>
-                <Button onClick={startVideo} disabled={video.loading || !!video.jobId && video.status !== "done" && video.status !== "failed"} className="mt-2 w-full rounded-full bg-[#1A1A1A] text-white hover:bg-[#D97757]" data-testid="ai-generate-video-btn">
+                <Button onClick={startVideo} disabled={video.loading} className="mt-2 w-full rounded-full bg-[#1A1A1A] text-white hover:bg-[#D97757]" data-testid="ai-generate-video-btn">
                   {video.loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
-                  {video.status && video.status !== "done" && video.status !== "failed" ? `Status: ${video.status}` : "Generate video"}
+                  {video.loading && video.status ? `Status: ${video.status}` : "Generate video"}
                 </Button>
                 <p className="mt-2 text-xs text-stone-500">Sora 2 · takes 2-5 min · saved to invitation.</p>
                 {data.video_url && (
