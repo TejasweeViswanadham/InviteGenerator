@@ -9,8 +9,7 @@ Sections:
   6. Guests + RSVP + analytics
   7. Email delivery (Resend)
   8. File uploads (photos, audio)
-  9. AI: text (Claude), image (Gemini Nano Banana), video (Sora 2)
- 10. App wiring
+  9. App wiring
 """
 from __future__ import annotations
 
@@ -29,7 +28,6 @@ import jwt
 from dotenv import load_dotenv
 from fastapi import (
     APIRouter,
-    BackgroundTasks,
     Depends,
     FastAPI,
     File,
@@ -44,9 +42,6 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 from starlette.middleware.cors import CORSMiddleware
-
-from emergentintegrations.llm.chat import LlmChat, UserMessage
-from emergentintegrations.llm.openai.video_generation import OpenAIVideoGeneration
 
 from storage import get_object, init_storage, put_object
 
@@ -63,7 +58,6 @@ db = client[os.environ["DB_NAME"]]
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = os.environ.get("JWT_ALGORITHM", "HS256")
 JWT_EXPIRES_HOURS = int(os.environ.get("JWT_EXPIRES_HOURS", "168"))
-EMERGENT_LLM_KEY = os.environ.get("EMERGENT_LLM_KEY", "")
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "").strip()
 SENDER_EMAIL = os.environ.get("SENDER_EMAIL", "onboarding@resend.dev")
 APP_NAME = os.environ.get("APP_NAME", "invitecraft")
@@ -185,23 +179,6 @@ class Invitation(InvitationBase):
     share_id: str
     created_at: str
     updated_at: str
-
-
-class AITextRequest(BaseModel):
-    event_type: str
-    vibe: str = "elegant"
-    details: str = ""
-
-
-class AIImageRequest(BaseModel):
-    prompt: str
-    event_type: str = "wedding"
-
-
-class AIVideoRequest(BaseModel):
-    prompt: str
-    duration: int = 4  # 4 | 8 | 12
-    size: str = "1024x1792"  # portrait for invite
 
 
 class GuestIn(BaseModel):
@@ -737,163 +714,7 @@ async def download_file(
 
 
 # --------------------------------------------------------------------------
-# 9. AI: text (Claude), image (Gemini), video (Sora 2)
-# --------------------------------------------------------------------------
-_AI_SYSTEM = (
-    "You are InviteCraft's copywriter. You write short, elegant invitation copy. "
-    "Return only the requested block, no preamble. Keep tone matched to the event and vibe. "
-    "Be warm, concise, and free of clichés."
-)
-
-
-@api_router.post("/ai/generate-text")
-async def ai_generate_text(req: AITextRequest, user: dict = Depends(get_current_user)):
-    prompt = (
-        f"Write an invitation message for a {req.event_type.replace('_', ' ')} event.\n"
-        f"Vibe: {req.vibe}.\n"
-        f"Additional context: {req.details or 'none'}.\n\n"
-        "Provide THREE parts, each on its own line prefixed exactly as:\n"
-        "TITLE: <2-4 words hero title>\n"
-        "SUBTITLE: <one-line elegant subtitle>\n"
-        "MESSAGE: <2-3 sentences invitation body>\n"
-    )
-    try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"invite-text-{user['id']}-{uuid.uuid4().hex[:8]}",
-            system_message=_AI_SYSTEM,
-        ).with_model("anthropic", "claude-sonnet-4-6")
-        response = await chat.send_message(UserMessage(text=prompt))
-        text = response if isinstance(response, str) else str(response)
-        result = {"title": "", "subtitle": "", "message": ""}
-        for line in text.splitlines():
-            line = line.strip()
-            if line.upper().startswith("TITLE:"):
-                result["title"] = line.split(":", 1)[1].strip().strip('"')
-            elif line.upper().startswith("SUBTITLE:"):
-                result["subtitle"] = line.split(":", 1)[1].strip().strip('"')
-            elif line.upper().startswith("MESSAGE:"):
-                result["message"] = line.split(":", 1)[1].strip().strip('"')
-        if not any(result.values()):
-            result["message"] = text.strip()
-        return result
-    except Exception as e:
-        logger.exception("AI text generation failed")
-        raise HTTPException(status_code=502, detail=f"AI text generation failed: {e}")
-
-
-@api_router.post("/ai/generate-image")
-async def ai_generate_image(req: AIImageRequest, user: dict = Depends(get_current_user)):
-    full_prompt = (
-        f"A high-quality, photographic background for a {req.event_type.replace('_', ' ')} invitation card. "
-        f"Style: {req.prompt}. "
-        "Composition: leave the center relatively clean for text overlay. "
-        "Soft lighting, elegant, no text, no watermark, vertical portrait 3:4 composition. "
-        "Rich but not busy."
-    )
-    try:
-        chat = LlmChat(
-            api_key=EMERGENT_LLM_KEY,
-            session_id=f"invite-img-{user['id']}-{uuid.uuid4().hex[:8]}",
-            system_message="You are an expert at composing beautiful invitation card backgrounds.",
-        ).with_model("gemini", "gemini-3.1-flash-image-preview").with_params(modalities=["image", "text"])
-        _text, images = await chat.send_message_multimodal_response(UserMessage(text=full_prompt))
-        if not images:
-            raise HTTPException(status_code=502, detail="No image returned by AI")
-        img = images[0]
-        data_url = f"data:{img['mime_type']};base64,{img['data']}"
-        return {"data_url": data_url}
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.exception("AI image generation failed")
-        raise HTTPException(status_code=502, detail=f"AI image generation failed: {e}")
-
-
-# ---- Video generation (Sora 2) -- background job pattern -----------------
-def _sora_worker(job_id: str, prompt: str, size: str, duration: int, user_id: str):
-    """Run in a thread — Sora blocks until done."""
-    try:
-        video_gen = OpenAIVideoGeneration(api_key=EMERGENT_LLM_KEY)
-        video_bytes = video_gen.text_to_video(
-            prompt=prompt,
-            model="sora-2",
-            size=size,
-            duration=duration,
-            max_wait_time=600,
-        )
-        if not video_bytes:
-            raise RuntimeError("Sora returned empty video")
-        path = f"{APP_NAME}/uploads/{user_id}/video/{job_id}.mp4"
-        put_object(path, video_bytes, "video/mp4")
-        return path, len(video_bytes), None
-    except Exception as e:
-        logger.exception("Sora worker failed")
-        return None, 0, str(e)
-
-
-async def _run_video_job(job_id: str, prompt: str, size: str, duration: int, user_id: str):
-    await db.video_jobs.update_one({"id": job_id}, {"$set": {"status": "running"}})
-    path, size_bytes, err = await asyncio.to_thread(_sora_worker, job_id, prompt, size, duration, user_id)
-    if err:
-        await db.video_jobs.update_one(
-            {"id": job_id},
-            {"$set": {"status": "failed", "error": err, "finished_at": _now_iso()}},
-        )
-        return
-    # Register the video file so /api/files can serve it
-    file_id = str(uuid.uuid4())
-    await db.files.insert_one({
-        "id": file_id,
-        "user_id": user_id,
-        "kind": "video",
-        "storage_path": path,
-        "original_filename": f"{job_id}.mp4",
-        "content_type": "video/mp4",
-        "size": size_bytes,
-        "is_deleted": False,
-        "created_at": _now_iso(),
-    })
-    await db.video_jobs.update_one(
-        {"id": job_id},
-        {"$set": {"status": "done", "storage_path": path, "finished_at": _now_iso()}},
-    )
-
-
-@api_router.post("/ai/generate-video")
-async def ai_generate_video(
-    req: AIVideoRequest,
-    background: BackgroundTasks,
-    user: dict = Depends(get_current_user),
-):
-    if req.duration not in (4, 8, 12):
-        raise HTTPException(status_code=400, detail="duration must be 4, 8 or 12")
-    if req.size not in {"1280x720", "1792x1024", "1024x1792", "1024x1024"}:
-        raise HTTPException(status_code=400, detail="unsupported size")
-    job_id = uuid.uuid4().hex[:16]
-    await db.video_jobs.insert_one({
-        "id": job_id,
-        "user_id": user["id"],
-        "prompt": req.prompt,
-        "duration": req.duration,
-        "size": req.size,
-        "status": "queued",
-        "created_at": _now_iso(),
-    })
-    background.add_task(_run_video_job, job_id, req.prompt, req.size, req.duration, user["id"])
-    return {"job_id": job_id, "status": "queued"}
-
-
-@api_router.get("/ai/video-status/{job_id}")
-async def video_status(job_id: str, user: dict = Depends(get_current_user)):
-    job = await db.video_jobs.find_one({"id": job_id, "user_id": user["id"]}, {"_id": 0})
-    if not job:
-        raise HTTPException(status_code=404, detail="Job not found")
-    return job
-
-
-# --------------------------------------------------------------------------
-# 10. App wiring
+# 9. App wiring
 # --------------------------------------------------------------------------
 # -------- Curated music preset seeding (self-hosted on object storage) ----
 CURATED_PRESETS = [
