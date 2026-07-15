@@ -760,12 +760,12 @@ def _seed_one_preset(preset: dict) -> Optional[dict]:
             ext = "mp3"
         content_type = _MIME_BY_EXT[ext]
         path = f"{APP_NAME}/presets/audio/{preset['id']}.{ext}"
-        put_object(path, data, content_type)
+        result = put_object(path, data, content_type)
         return {
             "id": preset["id"],
             "label": preset["label"],
             "category": preset["category"],
-            "storage_path": path,
+            "storage_path": result["path"],
             "content_type": content_type,
             "size": len(data),
             "created_at": _now_iso(),

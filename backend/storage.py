@@ -1,61 +1,56 @@
-"""Emergent Object Storage helper for InviteCraft."""
+"""Cloudinary-backed object storage for InviteCraft."""
 from __future__ import annotations
 import os
 import logging
 import requests
+import cloudinary
+import cloudinary.uploader
 
 logger = logging.getLogger(__name__)
 
-STORAGE_URL = "https://integrations.emergentagent.com/objstore/api/v1/storage"
-
-_state = {"key": None}
+_state = {"configured": False}
 
 
-def init_storage() -> str | None:
-    """Call once at startup. Returns cached storage_key."""
-    if _state["key"]:
-        return _state["key"]
-    emergent_key = os.environ.get("EMERGENT_LLM_KEY")
-    if not emergent_key:
-        logger.warning("EMERGENT_LLM_KEY missing; storage not initialized")
-        return None
-    try:
-        resp = requests.post(
-            f"{STORAGE_URL}/init",
-            json={"emergent_key": emergent_key},
-            timeout=30,
-        )
-        resp.raise_for_status()
-        _state["key"] = resp.json()["storage_key"]
-        logger.info("Object storage initialized")
-        return _state["key"]
-    except Exception as e:
-        logger.error("Storage init failed: %s", e)
-        return None
+def init_storage() -> bool:
+    """Call once at startup (and lazily before each op). Returns True if configured."""
+    if _state["configured"]:
+        return True
+    cloud_name = os.environ.get("CLOUDINARY_CLOUD_NAME")
+    api_key = os.environ.get("CLOUDINARY_API_KEY")
+    api_secret = os.environ.get("CLOUDINARY_API_SECRET")
+    if not (cloud_name and api_key and api_secret):
+        logger.warning("Cloudinary credentials missing; storage not initialized")
+        return False
+    cloudinary.config(cloud_name=cloud_name, api_key=api_key, api_secret=api_secret, secure=True)
+    _state["configured"] = True
+    logger.info("Cloudinary storage initialized")
+    return True
+
+
+def _resource_type(content_type: str) -> str:
+    if content_type.startswith("image/"):
+        return "image"
+    if content_type.startswith("audio/") or content_type.startswith("video/"):
+        return "video"
+    return "raw"
 
 
 def put_object(path: str, data: bytes, content_type: str) -> dict:
-    key = init_storage()
-    if not key:
+    """Uploads to Cloudinary. Returns {"path": <public delivery URL>, "size": int}."""
+    if not init_storage():
         raise RuntimeError("Storage not initialized")
-    resp = requests.put(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key, "Content-Type": content_type},
-        data=data,
-        timeout=120,
+    public_id = path.rsplit(".", 1)[0]
+    result = cloudinary.uploader.upload(
+        data,
+        public_id=public_id,
+        resource_type=_resource_type(content_type),
+        overwrite=True,
     )
-    resp.raise_for_status()
-    return resp.json()
+    return {"path": result["secure_url"], "size": result.get("bytes", len(data))}
 
 
 def get_object(path: str) -> tuple[bytes, str]:
-    key = init_storage()
-    if not key:
-        raise RuntimeError("Storage not initialized")
-    resp = requests.get(
-        f"{STORAGE_URL}/objects/{path}",
-        headers={"X-Storage-Key": key},
-        timeout=60,
-    )
+    """Fetches bytes from a stored file's public delivery URL."""
+    resp = requests.get(path, timeout=60)
     resp.raise_for_status()
     return resp.content, resp.headers.get("Content-Type", "application/octet-stream")
