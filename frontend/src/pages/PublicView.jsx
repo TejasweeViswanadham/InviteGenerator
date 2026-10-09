@@ -6,6 +6,7 @@ import EffectsLayer from "@/components/EffectsLayer";
 import Envelope from "@/components/Envelope";
 import MusicPlayer from "@/components/MusicPlayer";
 import ScratchReveal from "@/components/ScratchReveal";
+import PremiumSite from "@/components/premium/PremiumSite";
 import { fileUrl } from "@/lib/templates";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -65,6 +66,65 @@ export default function PublicView() {
     return <div className="flex min-h-screen items-center justify-center bg-[#FAF9F6] text-sm text-stone-500">Loading…</div>;
   }
 
+  const rsvpBlock = (
+    <div className="mt-16 w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8" data-testid="rsvp-block">
+      <div className="text-center">
+        <span className="chip-label">Kindly reply</span>
+        <h2 className="font-display mt-2 text-3xl">Will you join us?</h2>
+      </div>
+      {rsvp.submitted ? (
+        <div className="mt-8 rounded-lg bg-stone-50 p-6 text-center">
+          <div className="font-display text-2xl text-[#D97757]">Thank you!</div>
+          <p className="mt-2 text-sm text-stone-600">Your response has been recorded.</p>
+        </div>
+      ) : (
+        <form onSubmit={submitRsvp} className="mt-6 space-y-4" data-testid="rsvp-form">
+          <div>
+            <Label className="chip-label">Your name</Label>
+            <Input value={rsvp.name} onChange={(e) => setRsvp((r) => ({ ...r, name: e.target.value }))} className="mt-2 rounded-lg" required data-testid="rsvp-name-input" />
+          </div>
+          <div>
+            <Label className="chip-label">Your email</Label>
+            <Input type="email" value={rsvp.email} onChange={(e) => setRsvp((r) => ({ ...r, email: e.target.value }))} className="mt-2 rounded-lg" required data-testid="rsvp-email-input" />
+          </div>
+          <div>
+            <Label className="chip-label mb-3 block">Response</Label>
+            <RadioGroup value={rsvp.status} onValueChange={(v) => setRsvp((r) => ({ ...r, status: v }))} className="grid grid-cols-3 gap-2">
+              {[
+                { value: "yes", label: "Joyfully accept" },
+                { value: "maybe", label: "Maybe" },
+                { value: "no", label: "Cannot attend" },
+              ].map((opt) => (
+                <label
+                  key={opt.value}
+                  className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border px-3 py-3 text-xs smooth ${
+                    rsvp.status === opt.value
+                      ? "border-[#D97757] bg-[#FBEEE1]"
+                      : "border-stone-200 hover:border-stone-400"
+                  }`}
+                >
+                  <RadioGroupItem value={opt.value} className="sr-only" data-testid={`rsvp-radio-${opt.value}`} />
+                  <span className="text-center">{opt.label}</span>
+                </label>
+              ))}
+            </RadioGroup>
+          </div>
+          <div>
+            <Label className="chip-label">Message (optional)</Label>
+            <Textarea rows={2} value={rsvp.note} onChange={(e) => setRsvp((r) => ({ ...r, note: e.target.value }))} className="mt-2 rounded-lg" data-testid="rsvp-note-input" />
+          </div>
+          <Button type="submit" disabled={rsvp.loading} className="w-full rounded-full bg-[#1A1A1A] py-6 text-white hover:bg-[#D97757]" data-testid="rsvp-submit-btn">
+            {rsvp.loading ? "Sending…" : "Send RSVP"}
+          </Button>
+        </form>
+      )}
+    </div>
+  );
+
+  if (data.layout === "premium") {
+    return <PremiumSite data={data} rsvpSlot={rsvpBlock} shareLink={window.location.href} />;
+  }
+
   const invite = (
     <div data-testid="public-invite">
       {data.scratch_reveal ? (
@@ -109,59 +169,7 @@ export default function PublicView() {
           </div>
         )}
 
-        {/* RSVP form */}
-        <div className="mt-16 w-full max-w-md rounded-2xl border border-stone-200 bg-white p-8" data-testid="rsvp-block">
-          <div className="text-center">
-            <span className="chip-label">Kindly reply</span>
-            <h2 className="font-display mt-2 text-3xl">Will you join us?</h2>
-          </div>
-          {rsvp.submitted ? (
-            <div className="mt-8 rounded-lg bg-stone-50 p-6 text-center">
-              <div className="font-display text-2xl text-[#D97757]">Thank you!</div>
-              <p className="mt-2 text-sm text-stone-600">Your response has been recorded.</p>
-            </div>
-          ) : (
-            <form onSubmit={submitRsvp} className="mt-6 space-y-4" data-testid="rsvp-form">
-              <div>
-                <Label className="chip-label">Your name</Label>
-                <Input value={rsvp.name} onChange={(e) => setRsvp((r) => ({ ...r, name: e.target.value }))} className="mt-2 rounded-lg" required data-testid="rsvp-name-input" />
-              </div>
-              <div>
-                <Label className="chip-label">Your email</Label>
-                <Input type="email" value={rsvp.email} onChange={(e) => setRsvp((r) => ({ ...r, email: e.target.value }))} className="mt-2 rounded-lg" required data-testid="rsvp-email-input" />
-              </div>
-              <div>
-                <Label className="chip-label mb-3 block">Response</Label>
-                <RadioGroup value={rsvp.status} onValueChange={(v) => setRsvp((r) => ({ ...r, status: v }))} className="grid grid-cols-3 gap-2">
-                  {[
-                    { value: "yes", label: "Joyfully accept" },
-                    { value: "maybe", label: "Maybe" },
-                    { value: "no", label: "Cannot attend" },
-                  ].map((opt) => (
-                    <label
-                      key={opt.value}
-                      className={`flex cursor-pointer flex-col items-center justify-center rounded-lg border px-3 py-3 text-xs smooth ${
-                        rsvp.status === opt.value
-                          ? "border-[#D97757] bg-[#FBEEE1]"
-                          : "border-stone-200 hover:border-stone-400"
-                      }`}
-                    >
-                      <RadioGroupItem value={opt.value} className="sr-only" data-testid={`rsvp-radio-${opt.value}`} />
-                      <span className="text-center">{opt.label}</span>
-                    </label>
-                  ))}
-                </RadioGroup>
-              </div>
-              <div>
-                <Label className="chip-label">Message (optional)</Label>
-                <Textarea rows={2} value={rsvp.note} onChange={(e) => setRsvp((r) => ({ ...r, note: e.target.value }))} className="mt-2 rounded-lg" data-testid="rsvp-note-input" />
-              </div>
-              <Button type="submit" disabled={rsvp.loading} className="w-full rounded-full bg-[#1A1A1A] py-6 text-white hover:bg-[#D97757]" data-testid="rsvp-submit-btn">
-                {rsvp.loading ? "Sending…" : "Send RSVP"}
-              </Button>
-            </form>
-          )}
-        </div>
+        {rsvpBlock}
 
         <p className="mt-10 text-xs text-stone-500">Made with <Link to="/" className="underline hover:text-[#D97757]">InviteCraft</Link></p>
       </div>

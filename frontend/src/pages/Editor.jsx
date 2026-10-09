@@ -15,6 +15,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import InviteCanvas from "@/components/InviteCanvas";
 import EffectsLayer from "@/components/EffectsLayer";
+import PremiumSite from "@/components/premium/PremiumSite";
+import PremiumPanel from "@/components/premium/PremiumPanel";
 import {
   BACKGROUND_LIBRARY, FONT_OPTIONS, COLOR_SWATCHES, EVENT_TYPES,
   ENVELOPE_STYLES, EFFECT_OPTIONS, MUSIC_PRESETS as FALLBACK_PRESETS, PHOTO_LIBRARY, fileUrl, shareUrl,
@@ -23,7 +25,7 @@ import { toPng, toJpeg } from "html-to-image";
 import jsPDF from "jspdf";
 import {
   Sparkles, Download, Save, Share2, Loader2, Wand2, Trash2, Upload,
-  Users, Music, Eye, Image as ImageIcon,
+  Users, Music, Eye, RotateCcw, Image as ImageIcon,
 } from "lucide-react";
 
 const DEBOUNCE = 500;
@@ -107,6 +109,9 @@ export default function Editor() {
   }, [id]);
 
   const set = (patch) => setData((prev) => ({ ...prev, ...patch }));
+  const setWebsite = (patch) => setData((prev) => ({ ...prev, website: { ...(prev.website || {}), ...patch } }));
+  // Bumping this remounts the premium preview so the sealed envelope shows again.
+  const [previewKey, setPreviewKey] = useState(0);
 
   const save = async (announce = true) => {
     if (!data) return;
@@ -254,6 +259,8 @@ export default function Editor() {
     );
   }
 
+  const isPremium = data.layout === "premium";
+
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
       <Nav />
@@ -269,6 +276,9 @@ export default function Editor() {
             <div className="text-xs text-stone-500">{saving ? "Saving…" : "Auto-saved"}</div>
           </div>
 
+          {isPremium ? (
+            <PremiumPanel data={data} set={set} setWebsite={setWebsite} musicPresets={musicPresets} />
+          ) : (
           <Tabs defaultValue="content" className="w-full">
             <TabsList className="grid w-full grid-cols-5 rounded-full bg-stone-100">
               <TabsTrigger value="content" data-testid="tab-content">Content</TabsTrigger>
@@ -531,12 +541,13 @@ export default function Editor() {
 
             </TabsContent>
           </Tabs>
+          )}
         </aside>
 
         {/* RIGHT — preview */}
         <main className="flex flex-col items-center">
           <div className="mb-6 flex w-full items-center justify-between">
-            <span className="chip-label">Live preview · click a photo to select</span>
+            <span className="chip-label">{isPremium ? "Live preview · phone view" : "Live preview · click a photo to select"}</span>
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => save(true)} className="rounded-full" data-testid="editor-save-btn">
                 <Save className="mr-1.5 h-4 w-4" /> Save
@@ -547,6 +558,11 @@ export default function Editor() {
               <Button variant="ghost" size="sm" onClick={copyShareLink} className="rounded-full" data-testid="editor-share-btn">
                 <Share2 className="mr-1.5 h-4 w-4" /> Share link
               </Button>
+              {isPremium ? (
+                <Button variant="ghost" size="sm" onClick={() => setPreviewKey((k) => k + 1)} className="rounded-full">
+                  <RotateCcw className="mr-1.5 h-4 w-4" /> Replay envelope
+                </Button>
+              ) : (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button size="sm" className="rounded-full bg-[#1A1A1A] text-white hover:bg-[#D97757]" data-testid="editor-export-btn">
@@ -559,9 +575,18 @@ export default function Editor() {
                   <DropdownMenuItem onClick={exportPdf} data-testid="export-pdf">Download PDF</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
+              )}
             </div>
           </div>
 
+          {isPremium ? (
+            // Phone-sized frame; the site scrolls inside it.
+            <div className="rounded-[2.5rem] border-[10px] border-[#1A1A1A] bg-[#1A1A1A] shadow-2xl">
+              <div className="relative h-[760px] w-[390px] overflow-y-auto rounded-[1.8rem] bg-white">
+                <PremiumSite key={previewKey} data={data} embedded shareLink={shareUrl(data.share_id)} />
+              </div>
+            </div>
+          ) : (
           <div className="relative overflow-hidden rounded-3xl bg-white/50 p-8">
             <EffectsLayer effects={data.effects || []} contained />
             <InviteCanvas
@@ -573,6 +598,7 @@ export default function Editor() {
               onPhotoUpdate={updatePhoto}
             />
           </div>
+          )}
         </main>
       </div>
     </div>

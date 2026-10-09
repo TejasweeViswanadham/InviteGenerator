@@ -5,7 +5,7 @@ import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Plus, Trash2, ExternalLink, Pencil } from "lucide-react";
-import { EVENT_TYPES } from "@/lib/templates";
+import { EVENT_TYPES, shareUrl } from "@/lib/templates";
 import ConfirmDialog from "@/components/ConfirmDialog";
 
 export default function Dashboard() {
@@ -98,7 +98,7 @@ export default function Dashboard() {
                     </div>
                     <div className="flex gap-2">
                       <a
-                        href={`/i/${it.share_id}`}
+                        href={shareUrl(it.share_id)}
                         target="_blank"
                         rel="noreferrer"
                         className="rounded-full p-2 text-stone-500 hover:bg-stone-100 hover:text-[#D97757] smooth"

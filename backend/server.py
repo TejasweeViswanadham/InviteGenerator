@@ -23,7 +23,7 @@ import os
 import uuid
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 
 import anthropic
 import bcrypt
@@ -143,6 +143,11 @@ class InvitationBase(BaseModel):
     music_label: str = ""
     scratch_reveal: bool = False
     video_url: str = ""
+    # Premium wedding website: layout "premium" renders a multi-section site
+    # (events, venue, countdown, gallery) from `website` in `theme` colours.
+    layout: str = "card"  # card | premium
+    theme: str = ""  # maroon | emerald | rose
+    website: Dict[str, Any] = {}
 
 
 class InvitationCreate(InvitationBase):
@@ -174,6 +179,9 @@ class InvitationUpdate(BaseModel):
     music_label: Optional[str] = None
     scratch_reveal: Optional[bool] = None
     video_url: Optional[str] = None
+    layout: Optional[str] = None
+    theme: Optional[str] = None
+    website: Optional[Dict[str, Any]] = None
 
 
 class Invitation(InvitationBase):

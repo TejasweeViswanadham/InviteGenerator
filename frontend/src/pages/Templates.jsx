@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import Nav from "@/components/Nav";
 import api from "@/lib/api";
 import { TEMPLATES, EVENT_TYPES } from "@/lib/templates";
+import { PREMIUM_TEMPLATES, themeOf } from "@/lib/premium";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Crown, Plus } from "lucide-react";
 
 export default function Templates() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export default function Templates() {
   const [creating, setCreating] = useState(null);
 
   const filtered = useMemo(() => {
+    if (tab === "premium") return PREMIUM_TEMPLATES;
     if (tab === "all") return TEMPLATES;
     return TEMPLATES.filter((t) => t.event_type === tab);
   }, [tab]);
@@ -72,7 +74,7 @@ export default function Templates() {
           <Button
             variant="outline"
             className="rounded-full"
-            onClick={() => startBlank(tab === "all" ? "wedding" : tab)}
+            onClick={() => startBlank(tab === "all" || tab === "premium" ? "wedding" : tab)}
             data-testid="templates-blank-btn"
           >
             <Plus className="mr-2 h-4 w-4" /> Start blank
@@ -81,7 +83,7 @@ export default function Templates() {
 
         {/* Filters */}
         <div className="mt-10 flex flex-wrap gap-3">
-          {[{ id: "all", label: "All" }, ...EVENT_TYPES].map((t) => (
+          {[{ id: "all", label: "All" }, ...EVENT_TYPES, { id: "premium", label: "Premium" }].map((t) => (
             <button
               key={t.id}
               onClick={() => setTab(t.id)}
@@ -93,6 +95,7 @@ export default function Templates() {
               style={{ letterSpacing: "0.2em", textTransform: "uppercase" }}
               data-testid={`template-filter-${t.id}`}
             >
+              {t.id === "premium" && <Crown className="mr-1.5 inline h-3.5 w-3.5 -translate-y-px" />}
               {t.label}
             </button>
           ))}
@@ -105,6 +108,7 @@ export default function Templates() {
               className="fade-up group overflow-hidden rounded-2xl border border-stone-200 bg-white smooth hover-lift"
               data-testid={`template-card-${tpl.id}`}
             >
+              {tpl.premium ? <PremiumCardPreview tpl={tpl} /> : (
               <div className="relative aspect-[3/4] overflow-hidden">
                 <img
                   src={tpl.preview}
@@ -139,6 +143,7 @@ export default function Templates() {
                   <p className="mt-2 text-xs italic opacity-80">{tpl.data.subtitle}</p>
                 </div>
               </div>
+              )}
               <div className="flex items-center justify-between p-5">
                 <div>
                   <div className="chip-label">
@@ -160,6 +165,39 @@ export default function Templates() {
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// Mock of the premium site's sealed-envelope opening, in the template's theme.
+function PremiumCardPreview({ tpl }) {
+  const t = themeOf(tpl.theme);
+  const w = tpl.data.website || {};
+  const first = (n) => (n || "").trim().split(/\s+/)[0] || "";
+  return (
+    <div className="relative flex aspect-[3/4] flex-col items-center overflow-hidden" style={{ background: t.paper }}>
+      <div className="h-12 w-full shrink-0" style={{ background: t.primary, clipPath: "polygon(0 0, 100% 0, 50% 100%)" }} />
+      <div className="mx-6 -mt-1 flex flex-1 flex-col items-center rounded-sm bg-white px-5 pb-5 pt-4 text-center shadow-xl" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+        <div className="text-[11px] font-semibold tracking-[0.15em]" style={{ color: t.gold }}>{w.invocation}</div>
+        <div className="mt-3 flex h-36 w-full items-center justify-center overflow-hidden rounded border-2" style={{ borderColor: t.gold, background: `linear-gradient(160deg, ${t.primary}, ${t.primaryDark})` }}>
+          {w.hero_image ? (
+            <img src={w.hero_image} alt="" className="h-full w-full object-cover object-top" />
+          ) : (
+            <span style={{ fontFamily: "'Great Vibes', cursive", fontSize: 54, color: t.goldLight }}>
+              {first(w.bride)[0]}&amp;{first(w.groom)[0]}
+            </span>
+          )}
+        </div>
+        <div className="mt-3 text-3xl" style={{ fontFamily: "'Great Vibes', cursive", color: t.primary }}>
+          {first(w.bride)} &amp; {first(w.groom)}
+        </div>
+        <div className="mt-auto flex h-14 w-14 items-center justify-center rounded-full text-2xl" style={{ background: t.primary, color: t.goldLight, boxShadow: `0 0 0 6px ${t.gold}40` }}>
+          {w.seal_symbol}
+        </div>
+      </div>
+      <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-[#1A1A1A] px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-[#F2D488]">
+        <Crown className="h-3 w-3" /> Premium
+      </span>
     </div>
   );
 }
