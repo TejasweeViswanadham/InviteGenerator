@@ -416,6 +416,7 @@ export default function Editor() {
                           <SelectItem value="circle">Circle</SelectItem>
                           <SelectItem value="rounded">Rounded square</SelectItem>
                           <SelectItem value="rect">Rectangle</SelectItem>
+                          <SelectItem value="arch">Arch (portrait)</SelectItem>
                         </SelectContent>
                       </Select>
                     </Field>

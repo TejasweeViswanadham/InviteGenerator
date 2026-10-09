@@ -29,6 +29,7 @@ const InviteCanvas = forwardRef(function InviteCanvas(
   } = data;
 
   const bg = background_data || background_url || "";
+  const scriptHeading = /cursive/.test(heading_font || "");
   const opacity = Math.max(0, Math.min(1, Number(overlay_opacity ?? 0.35)));
 
   const startDrag = (e, photo) => {
@@ -119,14 +120,24 @@ const InviteCanvas = forwardRef(function InviteCanvas(
           >
             <div
               style={{
-                aspectRatio: "1 / 1",
+                // "arch" is a portrait temple-arch frame, used for deity artwork
+                aspectRatio: shape === "arch" ? "3 / 4" : "1 / 1",
                 overflow: "hidden",
-                borderRadius: shape === "circle" ? "50%" : shape === "rounded" ? 16 : 4,
+                borderRadius:
+                  shape === "circle" ? "50%"
+                  : shape === "arch" ? "50% 50% 6px 6px / 38% 38% 6px 6px"
+                  : shape === "rounded" ? 16 : 4,
                 border: `${border}px solid ${accent_color || "#D97757"}`,
                 background: "#fff",
               }}
             >
-              <img src={src} alt="" crossOrigin="anonymous" className="h-full w-full object-cover" />
+              <img
+                src={src}
+                alt=""
+                crossOrigin="anonymous"
+                className="h-full w-full object-cover"
+                style={shape === "arch" ? { objectPosition: "center top" } : undefined}
+              />
             </div>
           </div>
         );
@@ -167,8 +178,9 @@ const InviteCanvas = forwardRef(function InviteCanvas(
           </h1>
           {subtitle && (
             <p
-              className="mt-3 text-sm italic opacity-80"
-              style={{ fontFamily: heading_font }}
+              // Script headings are illegible at subtitle size, so fall back to the body font.
+              className={`mt-3 opacity-80 ${scriptHeading ? "text-xs uppercase" : "text-sm italic"}`}
+              style={scriptHeading ? { fontFamily: body_font, letterSpacing: "0.24em" } : { fontFamily: heading_font }}
               data-testid="invite-subtitle"
             >
               {subtitle}

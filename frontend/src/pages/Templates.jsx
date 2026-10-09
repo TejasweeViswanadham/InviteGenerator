@@ -113,6 +113,17 @@ export default function Templates() {
                 />
                 <div className="absolute inset-0 bg-black/30" />
                 <div className="absolute inset-0 flex flex-col items-center justify-center px-8 text-center text-white">
+                  {tpl.data.photos?.[0] && (
+                    <img
+                      src={tpl.data.photos[0].url}
+                      alt=""
+                      className="mb-4 h-32 w-24 object-cover object-top"
+                      style={{
+                        borderRadius: "50% 50% 4px 4px / 38% 38% 4px 4px",
+                        border: `3px solid ${tpl.data.accent_color}`,
+                      }}
+                    />
+                  )}
                   <div
                     className="text-[10px]"
                     style={{ letterSpacing: "0.42em", color: tpl.data.accent_color }}
