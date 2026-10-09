@@ -4,7 +4,9 @@ import { useMemo } from "react";
  * Renders floating animated particles based on selected effects.
  * effects: ["petals", "flowers", "confetti", "sparkles", "bells"]
  */
-export default function EffectsLayer({ effects = [] }) {
+// `contained` keeps particles inside the nearest positioned parent (editor preview)
+// instead of covering the whole viewport (public page).
+export default function EffectsLayer({ effects = [], contained = false }) {
   const particles = useMemo(() => {
     const list = [];
     effects.forEach((eff) => {
@@ -32,7 +34,7 @@ export default function EffectsLayer({ effects = [] }) {
   if (particles.length === 0) return null;
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden" data-testid="effects-layer">
+    <div className={`pointer-events-none ${contained ? "absolute" : "fixed"} inset-0 z-40 overflow-hidden`} data-testid="effects-layer">
       <style>{`
         @keyframes ic-fall {
           0% { transform: translate3d(var(--drift-start,0), -10vh, 0) rotate(0deg); opacity: 0; }

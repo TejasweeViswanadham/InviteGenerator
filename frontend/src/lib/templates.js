@@ -40,19 +40,19 @@ export const HERO_BACKGROUNDS = [
 export const PHOTO_LIBRARY = {
   temple: [
     "https://images.unsplash.com/photo-1466442929976-97f336a657be?w=600&q=80",
-    "https://images.unsplash.com/photo-1524492514790-8e5b6bd11a1a?w=600&q=80",
+    "https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=600&q=80",
   ],
   south_indian: [
     "https://images.unsplash.com/photo-1594744803329-e58b31de8bf5?w=600&q=80",
-    "https://images.unsplash.com/photo-1610030006547-9ce7b8a1a4b6?w=600&q=80",
+    "https://images.unsplash.com/photo-1617627143750-d86bc21e42bb?w=600&q=80",
   ],
   couple: [
     "https://images.unsplash.com/photo-1519741497674-611481863552?w=600&q=80",
     "https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=600&q=80",
   ],
   florals: [
-    "https://images.unsplash.com/photo-1587556930721-a2e0e7c8de0f?w=600&q=80",
-    "https://images.unsplash.com/photo-1416772602849-3e208d0e7f4b?w=600&q=80",
+    "https://images.unsplash.com/photo-1455659817273-f96807779a8a?w=600&q=80",
+    "https://images.unsplash.com/photo-1490750967868-88aa4486c946?w=600&q=80",
   ],
 };
 
@@ -261,6 +261,12 @@ export const TEMPLATES = [
 
 export function templatesForType(type) {
   return TEMPLATES.filter((t) => t.event_type === type);
+}
+
+// Public link guests open. PUBLIC_URL carries the GitHub Pages sub-path
+// (e.g. /InviteGenerator), which window.location.origin alone drops.
+export function shareUrl(shareId) {
+  return `${window.location.origin}${process.env.PUBLIC_URL || ""}/i/${shareId}`;
 }
 
 // Build a full file URL usable by <img>/<audio> for a stored file path

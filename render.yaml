@@ -29,3 +29,5 @@ services:
         sync: false
       - key: CLOUDINARY_API_SECRET
         sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false

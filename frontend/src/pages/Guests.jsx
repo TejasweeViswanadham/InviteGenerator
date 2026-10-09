@@ -9,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Mail, Trash2, Send, Eye, Users, CheckCircle, HelpCircle, XCircle, Clock, ArrowLeft } from "lucide-react";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { shareUrl } from "@/lib/templates";
 
 export default function Guests() {
   const { id } = useParams();
@@ -119,7 +120,7 @@ export default function Guests() {
     );
   }
 
-  const shareUrl = `${window.location.origin}/i/${invite.share_id}`;
+  const shareLink = shareUrl(invite.share_id);
   const rsvp = analytics?.rsvp_counts || { yes: 0, no: 0, maybe: 0, pending: 0 };
 
   return (
@@ -215,9 +216,9 @@ export default function Guests() {
           <aside className="space-y-6">
             <div className="rounded-2xl border border-stone-200 bg-white p-6">
               <span className="chip-label">Share link</span>
-              <div className="mt-3 break-all rounded-lg bg-stone-50 p-3 text-xs text-stone-700" data-testid="share-url">{shareUrl}</div>
-              <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(shareUrl); toast.success("Copied"); }} className="mt-3 w-full rounded-full" data-testid="copy-share-btn">Copy link</Button>
-              <a href={shareUrl} target="_blank" rel="noreferrer" className="mt-2 inline-flex w-full items-center justify-center rounded-full border border-stone-200 px-4 py-2 text-xs smooth hover:border-[#D97757] hover:text-[#D97757]">
+              <div className="mt-3 break-all rounded-lg bg-stone-50 p-3 text-xs text-stone-700" data-testid="share-url">{shareLink}</div>
+              <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(shareLink); toast.success("Copied"); }} className="mt-3 w-full rounded-full" data-testid="copy-share-btn">Copy link</Button>
+              <a href={shareLink} target="_blank" rel="noreferrer" className="mt-2 inline-flex w-full items-center justify-center rounded-full border border-stone-200 px-4 py-2 text-xs smooth hover:border-[#D97757] hover:text-[#D97757]">
                 Open public view
               </a>
             </div>

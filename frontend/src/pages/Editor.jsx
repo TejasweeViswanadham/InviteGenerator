@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import Nav from "@/components/Nav";
-import api, { uploadFile } from "@/lib/api";
+import api, { errorMessage, uploadFile } from "@/lib/api";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,15 +14,16 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import InviteCanvas from "@/components/InviteCanvas";
+import EffectsLayer from "@/components/EffectsLayer";
 import {
   BACKGROUND_LIBRARY, FONT_OPTIONS, COLOR_SWATCHES, EVENT_TYPES,
-  ENVELOPE_STYLES, EFFECT_OPTIONS, MUSIC_PRESETS as FALLBACK_PRESETS, PHOTO_LIBRARY, fileUrl,
+  ENVELOPE_STYLES, EFFECT_OPTIONS, MUSIC_PRESETS as FALLBACK_PRESETS, PHOTO_LIBRARY, fileUrl, shareUrl,
 } from "@/lib/templates";
 import { toPng, toJpeg } from "html-to-image";
 import jsPDF from "jspdf";
 import {
-  Sparkles, Download, Save, Share2, Loader2, Wand2, Plus, Trash2, Upload,
-  Users, Video, Music, Image as ImageIcon,
+  Sparkles, Download, Save, Share2, Loader2, Wand2, Trash2, Upload,
+  Users, Music, Eye, Image as ImageIcon,
 } from "lucide-react";
 
 const DEBOUNCE = 500;
@@ -39,10 +40,6 @@ export default function Editor() {
   const [selectedPhotoId, setSelectedPhotoId] = useState(null);
   const [musicPresets, setMusicPresets] = useState([]);
   const [aiText, setAiText] = useState({ loading: false, vibe: "elegant", details: "" });
-  const [aiImg, setAiImg] = useState({ loading: false, prompt: "soft romantic florals with cream background" });
-  const [video, setVideo] = useState({
-    loading: false, prompt: "", duration: 4, size: "1024x1792", jobId: null, status: null,
-  });
 
   // Keep latest data in a ref for flush-save on unmount / share.
   const latestData = useRef(null);
@@ -153,7 +150,7 @@ export default function Editor() {
       addPhotoFromLibrary(res.path);
       toast.success("Photo uploaded");
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Upload failed");
+      toast.error(errorMessage(err, "Upload failed"));
     }
   };
 
@@ -179,7 +176,7 @@ export default function Editor() {
       setMusic(file.name.replace(/\.[^.]+$/, ""), res.path);
       toast.success("Music uploaded");
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Upload failed");
+      toast.error(errorMessage(err, "Upload failed"));
     }
   };
 
@@ -197,70 +194,10 @@ export default function Editor() {
       set(patch);
       toast.success("AI copy applied");
     } catch (e) {
-      toast.error(e?.response?.data?.detail || "AI text failed");
+      toast.error(errorMessage(e, "AI text failed"));
     } finally {
       setAiText((p) => ({ ...p, loading: false }));
     }
-  };
-
-  const generateImage = async () => {
-    setAiImg((p) => ({ ...p, loading: true }));
-    try {
-      const { data: out } = await api.post("/ai/generate-image", {
-        prompt: aiImg.prompt, event_type: data.event_type,
-      });
-      set({ background_data: out.data_url, background_url: "" });
-      toast.success("AI background applied");
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || "AI image failed");
-    } finally {
-      setAiImg((p) => ({ ...p, loading: false }));
-    }
-  };
-
-  const startVideo = async () => {
-    if (!video.prompt.trim()) {
-      toast.error("Describe your video first");
-      return;
-    }
-    setVideo((v) => ({ ...v, loading: true }));
-    try {
-      const { data: job } = await api.post("/ai/generate-video", {
-        prompt: video.prompt, duration: video.duration, size: video.size,
-      });
-      setVideo((v) => ({ ...v, jobId: job.job_id, status: "queued" }));
-      toast.success("Video generation started — this can take 2-5 minutes");
-      pollVideo(job.job_id);
-    } catch (e) {
-      toast.error(e?.response?.data?.detail || "Video job failed to start");
-      setVideo((v) => ({ ...v, loading: false, jobId: null, status: null }));
-    }
-  };
-
-  const pollVideo = async (jobId) => {
-    let attempts = 0;
-    const tick = async () => {
-      attempts++;
-      try {
-        const { data: job } = await api.get(`/ai/video-status/${jobId}`);
-        setVideo((v) => ({ ...v, status: job.status }));
-        if (job.status === "done") {
-          set({ video_url: job.storage_path });
-          setVideo((v) => ({ ...v, loading: false }));
-          toast.success("Video ready!");
-          return;
-        }
-        if (job.status === "failed") {
-          setVideo((v) => ({ ...v, loading: false }));
-          toast.error("Video failed: " + (job.error || "unknown"));
-          return;
-        }
-        if (attempts < 90) setTimeout(tick, 5000);
-      } catch (e) {
-        if (attempts < 5) setTimeout(tick, 5000);
-      }
-    };
-    setTimeout(tick, 3000);
   };
 
   // ---------------- Export ----------------
@@ -284,17 +221,28 @@ export default function Editor() {
       pdf.save(`${safeName(data.title)}.pdf`);
     } catch { toast.error("PDF export failed"); }
   };
-  const copyShareLink = async () => {
-    // Flush pending save first so guests see the latest content.
+  const flushSave = async () => {
     if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
     await save(false);
-    const url = `${window.location.origin}/i/${data.share_id}`;
+  };
+  const copyShareLink = async () => {
+    // Flush pending save first so guests see the latest content.
+    await flushSave();
+    const url = shareUrl(data.share_id);
     try {
       await navigator.clipboard.writeText(url);
       toast.success("Share link copied");
     } catch {
       window.prompt("Copy this URL:", url);
     }
+  };
+  // Envelope, music and scratch-reveal only play on the guest page, so let the
+  // owner open it. The window is opened before the save so popup blockers allow it.
+  const previewAsGuest = async () => {
+    const win = window.open("", "_blank");
+    await flushSave();
+    if (win) win.location.href = shareUrl(data.share_id);
+    else window.location.href = shareUrl(data.share_id);
   };
 
   if (loading || !data) {
@@ -403,10 +351,11 @@ export default function Editor() {
                     {ENVELOPE_STYLES.map((e) => <SelectItem key={e.id} value={e.id}>{e.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                <GuestPreviewHint onPreview={previewAsGuest} what="The envelope opens" />
               </Field>
             </TabsContent>
 
-            {/* Media (background + photos + music + video) */}
+            {/* Media (background + photos + music) */}
             <TabsContent value="media" className="mt-6 space-y-6">
               {/* Background */}
               <section>
@@ -508,13 +457,17 @@ export default function Editor() {
                     <button onClick={() => setMusic("", "")} className="text-xs text-red-600 hover:underline" data-testid="music-clear-btn">Clear</button>
                   </div>
                 )}
+                {data.music_url && (
+                  <audio key={data.music_url} src={fileUrl(data.music_url)} controls preload="none" className="mt-2 w-full" data-testid="music-preview" />
+                )}
               </section>
             </TabsContent>
 
             {/* Effects */}
             <TabsContent value="fx" className="mt-6 space-y-5">
               <div>
-                <div className="chip-label mb-3">Falling effects (public view)</div>
+                <div className="chip-label mb-1">Falling effects</div>
+                <p className="mb-3 text-xs text-stone-500">Shown over the live preview, and across the whole page for guests.</p>
                 <div className="space-y-2">
                   {EFFECT_OPTIONS.map((e) => {
                     const active = (data.effects || []).includes(e.id);
@@ -547,6 +500,7 @@ export default function Editor() {
                     data-testid="scratch-toggle"
                   />
                 </div>
+                <GuestPreviewHint onPreview={previewAsGuest} what="Scratching" />
               </div>
             </TabsContent>
 
@@ -571,62 +525,9 @@ export default function Editor() {
                   {aiText.loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
                   Generate copy
                 </Button>
+                <p className="mt-2 text-xs text-stone-500">Writes a title, subtitle and message with Claude, replacing the current text.</p>
               </div>
 
-              <div className="rounded-xl border border-stone-200 p-4">
-                <div className="mb-3 flex items-center gap-2"><Sparkles className="h-4 w-4 text-[#D97757]" /><div className="chip-label">AI background</div></div>
-                <Field label="Describe your dream background">
-                  <Textarea rows={2} value={aiImg.prompt} onChange={(e) => setAiImg((p) => ({ ...p, prompt: e.target.value }))} data-testid="ai-image-prompt" />
-                </Field>
-                <Button onClick={generateImage} disabled={aiImg.loading} className="w-full rounded-full bg-[#1A1A1A] text-white hover:bg-[#D97757]" data-testid="ai-generate-image-btn">
-                  {aiImg.loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                  Paint background
-                </Button>
-                <p className="mt-2 text-xs text-stone-500">Gemini Nano Banana · ~10-20s.</p>
-              </div>
-
-              <div className="rounded-xl border border-stone-200 p-4">
-                <div className="mb-3 flex items-center gap-2"><Video className="h-4 w-4 text-[#D97757]" /><div className="chip-label">AI video (Sora 2)</div></div>
-                <Field label="Describe the video">
-                  <Textarea rows={2} value={video.prompt} onChange={(e) => setVideo((p) => ({ ...p, prompt: e.target.value }))} placeholder="Soft candlelight, floating petals, gentle piano" data-testid="ai-video-prompt" />
-                </Field>
-                <div className="grid grid-cols-2 gap-2">
-                  <Field label="Duration">
-                    <Select value={String(video.duration)} onValueChange={(v) => setVideo((p) => ({ ...p, duration: parseInt(v, 10) }))}>
-                      <SelectTrigger data-testid="ai-video-duration"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="4">4 sec</SelectItem>
-                        <SelectItem value="8">8 sec</SelectItem>
-                        <SelectItem value="12">12 sec</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label="Size">
-                    <Select value={video.size} onValueChange={(v) => setVideo((p) => ({ ...p, size: v }))}>
-                      <SelectTrigger data-testid="ai-video-size"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1024x1792">Portrait (invite)</SelectItem>
-                        <SelectItem value="1280x720">Landscape</SelectItem>
-                        <SelectItem value="1024x1024">Square</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                </div>
-                <Button onClick={startVideo} disabled={video.loading} className="mt-2 w-full rounded-full bg-[#1A1A1A] text-white hover:bg-[#D97757]" data-testid="ai-generate-video-btn">
-                  {video.loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Video className="mr-2 h-4 w-4" />}
-                  {video.loading && video.status ? `Status: ${video.status}` : "Generate video"}
-                </Button>
-                <p className="mt-2 text-xs text-stone-500">Sora 2 · takes 2-5 min · saved to invitation.</p>
-                {data.video_url && (
-                  <div className="mt-3 rounded-lg bg-stone-50 p-2">
-                    <div className="chip-label mb-2">Current video</div>
-                    <video src={fileUrl(data.video_url)} controls className="w-full rounded" data-testid="video-preview" />
-                    <button onClick={() => set({ video_url: "" })} className="mt-2 text-xs text-red-600 hover:underline" data-testid="video-clear-btn">
-                      Remove video
-                    </button>
-                  </div>
-                )}
-              </div>
             </TabsContent>
           </Tabs>
         </aside>
@@ -638,6 +539,9 @@ export default function Editor() {
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => save(true)} className="rounded-full" data-testid="editor-save-btn">
                 <Save className="mr-1.5 h-4 w-4" /> Save
+              </Button>
+              <Button variant="ghost" size="sm" onClick={previewAsGuest} className="rounded-full" data-testid="editor-guest-preview-btn">
+                <Eye className="mr-1.5 h-4 w-4" /> Preview as guest
               </Button>
               <Button variant="ghost" size="sm" onClick={copyShareLink} className="rounded-full" data-testid="editor-share-btn">
                 <Share2 className="mr-1.5 h-4 w-4" /> Share link
@@ -657,7 +561,8 @@ export default function Editor() {
             </div>
           </div>
 
-          <div className="rounded-3xl bg-white/50 p-8">
+          <div className="relative overflow-hidden rounded-3xl bg-white/50 p-8">
+            <EffectsLayer effects={data.effects || []} contained />
             <InviteCanvas
               ref={canvasRef}
               data={data}
@@ -670,6 +575,15 @@ export default function Editor() {
         </main>
       </div>
     </div>
+  );
+}
+
+function GuestPreviewHint({ onPreview, what }) {
+  return (
+    <p className="mt-2 text-xs text-stone-500">
+      {what} on the guest page.{" "}
+      <button type="button" onClick={onPreview} className="underline hover:text-[#D97757]">Preview as guest</button>
+    </p>
   );
 }
 

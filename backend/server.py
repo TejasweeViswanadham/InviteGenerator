@@ -9,13 +9,15 @@ Sections:
   6. Guests + RSVP + analytics
   7. Email delivery (Resend)
   8. File uploads (photos, audio)
-  9. App wiring
+  9. AI copywriter (Claude)
+ 10. App wiring
 """
 from __future__ import annotations
 
 import asyncio
 import base64
 import hashlib
+import json
 import logging
 import os
 import uuid
@@ -23,6 +25,7 @@ from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Any, List, Optional
 
+import anthropic
 import bcrypt
 import jwt
 from dotenv import load_dotenv
@@ -179,6 +182,12 @@ class Invitation(InvitationBase):
     share_id: str
     created_at: str
     updated_at: str
+
+
+class AITextRequest(BaseModel):
+    event_type: str
+    vibe: str = "elegant"
+    details: str = Field(default="", max_length=1000)
 
 
 class GuestIn(BaseModel):
@@ -714,7 +723,66 @@ async def download_file(
 
 
 # --------------------------------------------------------------------------
-# 9. App wiring
+# 9. AI copywriter (Claude)
+# --------------------------------------------------------------------------
+ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "").strip()
+_claude = anthropic.AsyncAnthropic(api_key=ANTHROPIC_API_KEY) if ANTHROPIC_API_KEY else None
+
+_AI_SYSTEM = (
+    "You are InviteCraft's copywriter. You write short, elegant invitation copy. "
+    "Match the tone to the event and vibe. Be warm, concise, and free of cliches. "
+    "Use any names, dates or places from the user's context exactly as given; never invent them."
+)
+
+_AI_TEXT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "title": {"type": "string", "description": "2-4 word hero title"},
+        "subtitle": {"type": "string", "description": "One-line elegant subtitle"},
+        "message": {"type": "string", "description": "2-3 sentence invitation body"},
+    },
+    "required": ["title", "subtitle", "message"],
+    "additionalProperties": False,
+}
+
+
+@api_router.post("/ai/generate-text")
+async def ai_generate_text(req: AITextRequest, user: dict = Depends(get_current_user)):
+    if _claude is None:
+        raise HTTPException(status_code=503, detail="AI copywriter isn't configured yet (missing ANTHROPIC_API_KEY).")
+    prompt = (
+        f"Write invitation copy for a {req.event_type.replace('_', ' ')} event.\n"
+        f"Vibe: {req.vibe}.\n"
+        f"Additional context: {req.details.strip() or 'none'}."
+    )
+    try:
+        response = await _claude.beta.messages.create(
+            model="claude-opus-5-5",
+            max_tokens=16000,
+            system=_AI_SYSTEM,
+            messages=[{"role": "user", "content": prompt}],
+            output_config={"effort": "low", "format": {"type": "json_schema", "schema": _AI_TEXT_SCHEMA}},
+            betas=["server-side-fallback-2026-07-01"],
+            fallbacks="default",
+        )
+    except anthropic.RateLimitError:
+        raise HTTPException(status_code=429, detail="The AI is busy right now. Please try again in a minute.")
+    except (anthropic.APIStatusError, anthropic.APIConnectionError) as e:
+        logger.exception("AI text generation failed")
+        raise HTTPException(status_code=502, detail=f"AI text generation failed: {e}")
+    if response.stop_reason == "refusal":
+        raise HTTPException(status_code=422, detail="The AI couldn't write copy for that request. Try rewording the context.")
+    text = next((b.text for b in response.content if b.type == "text"), "")
+    try:
+        out = json.loads(text)
+    except ValueError:
+        logger.error("AI returned non-JSON output (request %s)", response._request_id)
+        raise HTTPException(status_code=502, detail="AI returned an unexpected response. Please try again.")
+    return {k: str(out.get(k, "")).strip() for k in ("title", "subtitle", "message")}
+
+
+# --------------------------------------------------------------------------
+# 10. App wiring
 # --------------------------------------------------------------------------
 # -------- Curated music preset seeding (self-hosted on object storage) ----
 CURATED_PRESETS = [
