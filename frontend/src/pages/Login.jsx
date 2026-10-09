@@ -1,26 +1,36 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth.jsx";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Nav from "@/components/Nav";
+import { errorMessage } from "@/lib/api";
 
 export default function Login() {
   const { login, loading } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from || "/dashboard";
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const submit = async (e) => {
     e.preventDefault();
+    // The free-tier server sleeps when idle; tell the user if it's slow.
+    const slow = setTimeout(
+      () => toast.info("Waking up the server — this can take up to a minute the first time."),
+      5000
+    );
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       toast.success("Welcome back!");
-      navigate("/dashboard");
+      navigate(from, { replace: true });
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Login failed");
+      toast.error(errorMessage(err, "Login failed"));
+    } finally {
+      clearTimeout(slow);
     }
   };
 

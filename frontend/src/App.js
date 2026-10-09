@@ -1,5 +1,5 @@
 import "@/App.css";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/auth.jsx";
 import { Toaster } from "sonner";
 import Landing from "@/pages/Landing";
@@ -13,7 +13,16 @@ import Guests from "@/pages/Guests";
 
 function Protected({ children }) {
   const { user } = useAuth();
-  if (!user) return <Navigate to="/login" replace />;
+  const location = useLocation();
+  if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
+  return children;
+}
+
+// Login/register pages: send already-signed-in users straight in.
+function GuestOnly({ children }) {
+  const { user } = useAuth();
+  const location = useLocation();
+  if (user) return <Navigate to={location.state?.from || "/dashboard"} replace />;
   return children;
 }
 
@@ -24,8 +33,8 @@ function App() {
         <BrowserRouter basename={process.env.PUBLIC_URL}>
           <Routes>
             <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<GuestOnly><Login /></GuestOnly>} />
+            <Route path="/register" element={<GuestOnly><Register /></GuestOnly>} />
             <Route path="/i/:shareId" element={<PublicView />} />
             <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
             <Route path="/templates" element={<Protected><Templates /></Protected>} />

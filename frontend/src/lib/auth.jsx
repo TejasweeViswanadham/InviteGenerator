@@ -15,17 +15,25 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (localStorage.getItem("ic_token") && !user) {
+    // Any 401 from the API means the session is gone — drop the user so
+    // protected pages redirect to /login instead of silently failing.
+    const onUnauthorized = () => setUser(null);
+    window.addEventListener("ic:unauthorized", onUnauthorized);
+
+    // Re-validate a stored session on load. A 401 is handled by the API
+    // interceptor; network errors (e.g. server waking up) keep the session.
+    if (localStorage.getItem("ic_token")) {
       api.get("/auth/me")
         .then((r) => {
           setUser(r.data);
           localStorage.setItem("ic_user", JSON.stringify(r.data));
         })
-        .catch(() => {
-          localStorage.removeItem("ic_token");
-          localStorage.removeItem("ic_user");
-        });
+        .catch(() => {});
+    } else if (user) {
+      setUser(null);
+      localStorage.removeItem("ic_user");
     }
+    return () => window.removeEventListener("ic:unauthorized", onUnauthorized);
     // eslint-disable-next-line
   }, []);
 

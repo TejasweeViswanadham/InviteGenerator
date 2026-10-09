@@ -17,10 +17,29 @@ api.interceptors.response.use(
     if (err?.response?.status === 401) {
       localStorage.removeItem("ic_token");
       localStorage.removeItem("ic_user");
+      window.dispatchEvent(new Event("ic:unauthorized"));
     }
     return Promise.reject(err);
   }
 );
+
+// Turn an axios error into a message a user can act on.
+export function errorMessage(err, fallback = "Something went wrong") {
+  if (!err?.response) {
+    return "Can't reach the server. It may be waking up — please try again in a few seconds.";
+  }
+  const detail = err.response.data?.detail;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail) && detail.length) {
+    // FastAPI validation errors: [{loc, msg, ...}]
+    const first = detail[0];
+    const field = Array.isArray(first?.loc) ? first.loc[first.loc.length - 1] : "";
+    if (field === "email") return "Please enter a valid email address.";
+    if (field === "password") return "Password must be at least 6 characters.";
+    return first?.msg || fallback;
+  }
+  return fallback;
+}
 
 export async function uploadFile(kind, file) {
   const form = new FormData();

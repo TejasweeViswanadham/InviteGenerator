@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Nav from "@/components/Nav";
+import { errorMessage } from "@/lib/api";
 
 export default function Register() {
   const { register, loading } = useAuth();
@@ -16,12 +17,19 @@ export default function Register() {
 
   const submit = async (e) => {
     e.preventDefault();
+    // The free-tier server sleeps when idle; tell the user if it's slow.
+    const slow = setTimeout(
+      () => toast.info("Waking up the server — this can take up to a minute the first time."),
+      5000
+    );
     try {
-      await register(name, email, password);
+      await register(name.trim(), email.trim(), password);
       toast.success("Account created — welcome!");
-      navigate("/templates");
+      navigate("/templates", { replace: true });
     } catch (err) {
-      toast.error(err?.response?.data?.detail || "Sign-up failed");
+      toast.error(errorMessage(err, "Sign-up failed"));
+    } finally {
+      clearTimeout(slow);
     }
   };
 
