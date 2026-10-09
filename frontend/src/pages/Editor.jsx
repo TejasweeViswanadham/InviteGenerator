@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "@/lib/auth.jsx";
+import { rememberLastEdit } from "@/lib/resume";
 import Nav from "@/components/Nav";
 import api, { errorMessage, uploadFile } from "@/lib/api";
 import { toast } from "sonner";
@@ -25,7 +27,7 @@ import { toPng, toJpeg } from "html-to-image";
 import jsPDF from "jspdf";
 import {
   Sparkles, Download, Save, Share2, Loader2, Wand2, Trash2, Upload,
-  Users, Music, Eye, RotateCcw, Image as ImageIcon,
+  Users, Music, Eye, RotateCcw, ArrowLeft, Image as ImageIcon,
 } from "lucide-react";
 
 const DEBOUNCE = 500;
@@ -46,6 +48,11 @@ export default function Editor() {
   // Keep latest data in a ref for flush-save on unmount / share.
   const latestData = useRef(null);
   useEffect(() => { latestData.current = data; }, [data]);
+
+  const { user } = useAuth();
+  useEffect(() => {
+    if (data?.id) rememberLastEdit(user?.id, data);
+  }, [user?.id, data?.id, data?.title]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     (async () => {
@@ -246,8 +253,10 @@ export default function Editor() {
   const previewAsGuest = async () => {
     const win = window.open("", "_blank");
     await flushSave();
-    if (win) win.location.href = shareUrl(data.share_id);
-    else window.location.href = shareUrl(data.share_id);
+    // ?preview tells the guest page to show a "Back to editor" button (owner only).
+    const url = `${shareUrl(data.share_id)}?preview=${id}`;
+    if (win) win.location.href = url;
+    else window.location.href = url;
   };
 
   if (loading || !data) {
@@ -270,7 +279,10 @@ export default function Editor() {
         <aside className="rounded-2xl border border-stone-200 bg-white p-6" data-testid="editor-controls">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <span className="chip-label">Editor</span>
+              <Link to="/dashboard" className="mb-2 inline-flex items-center gap-1 text-xs text-stone-500 hover:text-[#D97757]" data-testid="editor-back-btn">
+                <ArrowLeft className="h-3.5 w-3.5" /> My invitations
+              </Link>
+              <span className="chip-label block">Editor</span>
               <div className="font-display text-2xl truncate max-w-[280px]">{data.title || "Untitled"}</div>
             </div>
             <div className="text-xs text-stone-500">{saving ? "Saving…" : "Auto-saved"}</div>

@@ -4,14 +4,17 @@ import Nav from "@/components/Nav";
 import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Plus, Trash2, ExternalLink, Pencil } from "lucide-react";
+import { Plus, Trash2, ExternalLink, Pencil, History } from "lucide-react";
 import { EVENT_TYPES, shareUrl } from "@/lib/templates";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { useAuth } from "@/lib/auth.jsx";
+import { readLastEdit } from "@/lib/resume";
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
 
   const load = async () => {
     setLoading(true);
@@ -61,6 +64,8 @@ export default function Dashboard() {
             </Button>
           </Link>
         </div>
+
+        <ResumeBanner last={readLastEdit(user?.id)} items={items} />
 
         <div className="mt-14">
           {loading ? (
@@ -162,4 +167,37 @@ function EmptyState({ onCreate }) {
       </Button>
     </div>
   );
+}
+
+function ResumeBanner({ last, items }) {
+  // Only offer invitations that still exist.
+  const inv = last && items.find((i) => i.id === last.id);
+  if (!inv) return null;
+  return (
+    <div className="mt-10 flex flex-col items-start justify-between gap-4 rounded-2xl border border-[#E8D9C4] bg-[#FBF5EC] p-5 sm:flex-row sm:items-center" data-testid="resume-banner">
+      <div className="flex items-center gap-3">
+        <History className="h-5 w-5 text-[#D97757]" />
+        <div>
+          <div className="chip-label">Pick up where you left off</div>
+          <div className="font-display text-xl">{inv.title || "Untitled"}</div>
+          <div className="text-xs text-stone-500">Last edited {timeAgo(last.at)}</div>
+        </div>
+      </div>
+      <Link to={`/editor/${inv.id}`}>
+        <Button className="rounded-full bg-[#1A1A1A] px-5 text-white hover:bg-[#D97757]" data-testid="resume-btn">
+          Continue editing
+        </Button>
+      </Link>
+    </div>
+  );
+}
+
+function timeAgo(ts) {
+  const mins = Math.round((Date.now() - ts) / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.round(mins / 60);
+  if (hrs < 24) return `${hrs} hour${hrs > 1 ? "s" : ""} ago`;
+  const days = Math.round(hrs / 24);
+  return `${days} day${days > 1 ? "s" : ""} ago`;
 }

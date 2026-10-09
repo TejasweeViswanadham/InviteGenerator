@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import InviteCanvas from "@/components/InviteCanvas";
 import EffectsLayer from "@/components/EffectsLayer";
@@ -122,7 +122,12 @@ export default function PublicView() {
   );
 
   if (data.layout === "premium") {
-    return <PremiumSite data={data} rsvpSlot={rsvpBlock} shareLink={window.location.href} />;
+    return (
+      <>
+        <PremiumSite data={data} rsvpSlot={rsvpBlock} shareLink={window.location.href.split("?")[0]} />
+        <BackToEditor />
+      </>
+    );
   }
 
   const invite = (
@@ -139,6 +144,7 @@ export default function PublicView() {
 
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
+      <BackToEditor />
       <EffectsLayer effects={data.effects || []} />
       <MusicPlayer src={data.music_url ? fileUrl(data.music_url) : ""} label={data.music_label || "Music"} />
 
@@ -174,5 +180,27 @@ export default function PublicView() {
         <p className="mt-10 text-xs text-stone-500">Made with <Link to="/" className="underline hover:text-[#D97757]">InviteCraft</Link></p>
       </div>
     </div>
+  );
+}
+
+// Shown only when the owner opened this page via "Preview as guest" (?preview=<id>)
+// and is signed in; guests opening the shared link never see it.
+function BackToEditor() {
+  const navigate = useNavigate();
+  const editId = new URLSearchParams(window.location.search).get("preview");
+  if (!editId || !localStorage.getItem("ic_token")) return null;
+  const back = () => {
+    // The preview opens in a new tab: close it to land back on the editor tab.
+    if (window.opener && !window.opener.closed) window.close();
+    else navigate(`/editor/${editId}`);
+  };
+  return (
+    <button
+      onClick={back}
+      className="fixed left-4 top-4 z-[80] flex items-center gap-1.5 rounded-full bg-[#1A1A1A] px-4 py-2 text-xs text-white shadow-lg hover:bg-[#D97757]"
+      data-testid="back-to-editor-btn"
+    >
+      ← Back to editor
+    </button>
   );
 }
