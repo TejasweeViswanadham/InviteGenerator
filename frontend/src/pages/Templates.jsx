@@ -132,6 +132,7 @@ export default function Templates() {
                 <div>
                   <div className="chip-label">
                     {EVENT_TYPES.find((e) => e.id === tpl.event_type)?.label}
+                    {tpl.style ? ` · ${tpl.style}` : ""}
                   </div>
                   <div className="font-display text-xl">{tpl.name}</div>
                 </div>
