@@ -6,18 +6,36 @@ import { TEMPLATES, EVENT_TYPES } from "@/lib/templates";
 import { PREMIUM_TEMPLATES, themeOf } from "@/lib/premium";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Crown, Plus } from "lucide-react";
+import { Crown, Plus, Search, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 export default function Templates() {
   const navigate = useNavigate();
   const [tab, setTab] = useState("all");
+  const [style, setStyle] = useState("");
+  const [query, setQuery] = useState("");
   const [creating, setCreating] = useState(null);
 
-  const filtered = useMemo(() => {
+  const byTab = useMemo(() => {
     if (tab === "premium") return PREMIUM_TEMPLATES;
     if (tab === "all") return TEMPLATES;
     return TEMPLATES.filter((t) => t.event_type === tab);
   }, [tab]);
+  // Style chips (South Indian, Shiv–Parvati, Nikah…) for what's in the current tab.
+  const styles = useMemo(() => [...new Set(byTab.map((t) => t.style).filter(Boolean))], [byTab]);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return byTab.filter((t) => {
+      if (style && t.style !== style) return false;
+      if (!q) return true;
+      const label = EVENT_TYPES.find((e) => e.id === t.event_type)?.label || "";
+      return [t.name, t.style, label, t.data.title, t.data.subtitle].some((v) => (v || "").toLowerCase().includes(q));
+    });
+  }, [byTab, style, query]);
+  const chooseTab = (id) => {
+    setTab(id);
+    setStyle("");
+  };
 
   const startFrom = async (tpl) => {
     setCreating(tpl.id);
@@ -62,7 +80,7 @@ export default function Templates() {
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
       <Nav />
-      <div className="mx-auto max-w-7xl px-6 py-16 sm:px-10">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-10 sm:py-16">
         <div className="flex flex-col justify-between gap-6 sm:flex-row sm:items-end">
           <div>
             <span className="chip-label">Choose a starter</span>
@@ -82,11 +100,11 @@ export default function Templates() {
         </div>
 
         {/* Filters */}
-        <div className="mt-10 flex flex-wrap gap-3">
+        <div className="mt-8 flex flex-wrap gap-2 sm:gap-3">
           {[{ id: "all", label: "All" }, ...EVENT_TYPES, { id: "premium", label: "Premium" }].map((t) => (
             <button
               key={t.id}
-              onClick={() => setTab(t.id)}
+              onClick={() => chooseTab(t.id)}
               className={`rounded-full border px-5 py-2 text-xs smooth ${
                 tab === t.id
                   ? "border-[#1A1A1A] bg-[#1A1A1A] text-white"
@@ -101,7 +119,48 @@ export default function Templates() {
           ))}
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        {/* Style chips + search */}
+        <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap gap-2">
+            {styles.length > 1 &&
+              ["", ...styles].map((s) => (
+                <button
+                  key={s || "any"}
+                  onClick={() => setStyle(s)}
+                  className={`rounded-full border px-3.5 py-1.5 text-xs smooth ${
+                    style === s ? "border-[#D97757] bg-[#FBEEE1] text-[#B85C3E]" : "border-stone-200 bg-white text-stone-600 hover:border-stone-400"
+                  }`}
+                  data-testid={`template-style-${s || "any"}`}
+                >
+                  {s || "Any style"}
+                </button>
+              ))}
+          </div>
+          <div className="relative w-full sm:w-72">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search templates (e.g. Nikah, kolam)"
+              className="rounded-full pl-9 pr-9"
+              data-testid="template-search"
+            />
+            {query && (
+              <button onClick={() => setQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-700" aria-label="Clear search">
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {filtered.length === 0 && (
+          <div className="mt-12 rounded-2xl border border-dashed border-stone-300 p-10 text-center text-sm text-stone-600">
+            No templates match. <button className="underline hover:text-[#D97757]" onClick={() => { setQuery(""); setStyle(""); }}>Clear filters</button> or{" "}
+            <button className="underline hover:text-[#D97757]" onClick={() => startBlank(tab === "all" || tab === "premium" ? "wedding" : tab)}>start blank</button>.
+          </div>
+        )}
+
+        <div className="mt-8 grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((tpl) => (
             <div
               key={tpl.id}

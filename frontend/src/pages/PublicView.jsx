@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 import InviteCanvas from "@/components/InviteCanvas";
+import ScaledBox from "@/components/ScaledBox";
 import EffectsLayer from "@/components/EffectsLayer";
 import Envelope from "@/components/Envelope";
 import MusicPlayer from "@/components/MusicPlayer";
@@ -148,14 +149,16 @@ export default function PublicView() {
       <EffectsLayer effects={data.effects || []} />
       <MusicPlayer src={data.music_url ? fileUrl(data.music_url) : ""} label={data.music_label || "Music"} />
 
-      <div className="mx-auto flex max-w-3xl flex-col items-center px-6 py-16">
+      <div className="mx-auto flex max-w-3xl flex-col items-center px-4 py-10 sm:px-6 sm:py-16">
         <span className="chip-label" data-testid="public-view-label">You're invited</span>
 
-        <div className="mt-6">
+        <div className="mt-6 w-full">
           {data.envelope_style && data.envelope_style !== "none" ? (
-            <Envelope style={data.envelope_style}>{invite}</Envelope>
+            <ScaledBox width={720} height={900} className="mx-auto">
+              <Envelope style={data.envelope_style}>{invite}</Envelope>
+            </ScaledBox>
           ) : (
-            invite
+            <ScaledBox width={600} height={800} className="mx-auto">{invite}</ScaledBox>
           )}
         </div>
 

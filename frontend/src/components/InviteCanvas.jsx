@@ -40,6 +40,7 @@ const InviteCanvas = forwardRef(function InviteCanvas(
     onPhotoSelect?.(photo.id);
     const container = e.currentTarget.parentElement;
     const rect = container.getBoundingClientRect();
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     const startX = e.clientX;
     const startY = e.clientY;
     const startXPct = photo.x_pct;
@@ -55,11 +56,11 @@ const InviteCanvas = forwardRef(function InviteCanvas(
       });
     };
     const onUp = () => {
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
     };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
   };
 
   return (
@@ -107,7 +108,7 @@ const InviteCanvas = forwardRef(function InviteCanvas(
         return (
           <div
             key={p.id}
-            onMouseDown={(e) => startDrag(e, p)}
+            onPointerDown={(e) => startDrag(e, p)}
             className={`absolute ${interactivePhotos ? "cursor-move" : ""} ${
               selectedPhotoId === p.id ? "ring-2 ring-[#D97757]" : ""
             }`}
@@ -117,6 +118,7 @@ const InviteCanvas = forwardRef(function InviteCanvas(
               width: `${p.w_pct}%`,
               transform: `translate(-50%, -50%) rotate(${p.rotation || 0}deg)`,
               zIndex: 5 + (p.z_index || 1),
+              touchAction: interactivePhotos ? "none" : undefined,
             }}
             data-testid={`invite-photo-${p.id}`}
           >

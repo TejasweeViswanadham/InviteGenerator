@@ -15,7 +15,8 @@ export default function ScratchReveal({ children, coverColor = "#C89F59", label 
     const canvas = canvasRef.current;
     if (!wrap || !canvas || revealed) return;
     const resize = () => {
-      const rect = wrap.getBoundingClientRect();
+      // Layout size, not on-screen size: the card may be CSS-scaled to fit a phone.
+      const rect = { width: wrap.offsetWidth, height: wrap.offsetHeight };
       canvas.width = rect.width * window.devicePixelRatio;
       canvas.height = rect.height * window.devicePixelRatio;
       canvas.style.width = `${rect.width}px`;
@@ -60,8 +61,8 @@ export default function ScratchReveal({ children, coverColor = "#C89F59", label 
     const rect = canvas.getBoundingClientRect();
     const ctx = canvas.getContext("2d");
     ctx.globalCompositeOperation = "destination-out";
-    const rx = (x - rect.left) * window.devicePixelRatio;
-    const ry = (y - rect.top) * window.devicePixelRatio;
+    const rx = (x - rect.left) * (canvas.width / rect.width);
+    const ry = (y - rect.top) * (canvas.height / rect.height);
     ctx.beginPath();
     ctx.arc(rx, ry, 38 * window.devicePixelRatio, 0, Math.PI * 2);
     ctx.fill();

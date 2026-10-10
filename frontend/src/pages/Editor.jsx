@@ -16,6 +16,9 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import InviteCanvas from "@/components/InviteCanvas";
+import ScaledBox from "@/components/ScaledBox";
+import ShareDialog from "@/components/ShareDialog";
+import EditorWelcome from "@/components/EditorWelcome";
 import EffectsLayer from "@/components/EffectsLayer";
 import PremiumSite from "@/components/premium/PremiumSite";
 import PremiumPanel from "@/components/premium/PremiumPanel";
@@ -119,6 +122,7 @@ export default function Editor() {
   const setWebsite = (patch) => setData((prev) => ({ ...prev, website: { ...(prev.website || {}), ...patch } }));
   // Bumping this remounts the premium preview so the sealed envelope shows again.
   const [previewKey, setPreviewKey] = useState(0);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const save = async (announce = true) => {
     if (!data) return;
@@ -237,16 +241,10 @@ export default function Editor() {
     if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
     await save(false);
   };
-  const copyShareLink = async () => {
+  const openShare = async () => {
     // Flush pending save first so guests see the latest content.
     await flushSave();
-    const url = shareUrl(data.share_id);
-    try {
-      await navigator.clipboard.writeText(url);
-      toast.success("Share link copied");
-    } catch {
-      window.prompt("Copy this URL:", url);
-    }
+    setShareOpen(true);
   };
   // Envelope, music and scratch-reveal only play on the guest page, so let the
   // owner open it. The window is opened before the save so popup blockers allow it.
@@ -274,9 +272,9 @@ export default function Editor() {
     <div className="min-h-screen bg-[#FAF9F6]">
       <Nav />
 
-      <div className="mx-auto grid max-w-[1500px] grid-cols-1 gap-8 px-6 py-10 sm:px-10 lg:grid-cols-[460px_1fr]">
+      <div className="mx-auto grid max-w-[1500px] grid-cols-1 gap-8 px-4 py-6 sm:px-10 sm:py-10 lg:grid-cols-[460px_1fr]">
         {/* LEFT — controls */}
-        <aside className="rounded-2xl border border-stone-200 bg-white p-6" data-testid="editor-controls">
+        <aside className="min-w-0 rounded-2xl border border-stone-200 bg-white p-4 sm:p-6" data-testid="editor-controls">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <Link to="/dashboard" className="mb-2 inline-flex items-center gap-1 text-xs text-stone-500 hover:text-[#D97757]" data-testid="editor-back-btn">
@@ -287,6 +285,8 @@ export default function Editor() {
             </div>
             <div className="text-xs text-stone-500">{saving ? "Saving…" : "Auto-saved"}</div>
           </div>
+
+          <EditorWelcome premium={isPremium} />
 
           {isPremium ? (
             <PremiumPanel data={data} set={set} setWebsite={setWebsite} musicPresets={musicPresets} />
@@ -302,6 +302,7 @@ export default function Editor() {
 
             {/* Content */}
             <TabsContent value="content" className="mt-6 space-y-4">
+              <TabHint>Type below and the card updates as you go. Leave a line empty to hide it.</TabHint>
               <Field label="Event type">
                 <Select value={data.event_type} onValueChange={(v) => set({ event_type: v })}>
                   <SelectTrigger data-testid="input-event-type"><SelectValue /></SelectTrigger>
@@ -312,14 +313,14 @@ export default function Editor() {
               </Field>
               <Field label="Title"><Input value={data.title} onChange={(e) => set({ title: e.target.value })} data-testid="input-title" /></Field>
               <Field label="Subtitle"><Input value={data.subtitle} onChange={(e) => set({ subtitle: e.target.value })} data-testid="input-subtitle" /></Field>
-              <Field label="Hosts / eyebrow"><Input value={data.hosts} onChange={(e) => set({ hosts: e.target.value })} data-testid="input-hosts" /></Field>
+              <Field label="Top line (e.g. Together with their families)"><Input value={data.hosts} onChange={(e) => set({ hosts: e.target.value })} data-testid="input-hosts" /></Field>
               <Field label="Message"><Textarea rows={3} value={data.message} onChange={(e) => set({ message: e.target.value })} data-testid="input-message" /></Field>
               <div className="grid grid-cols-2 gap-3">
                 <Field label="Date"><Input value={data.date_text} onChange={(e) => set({ date_text: e.target.value })} data-testid="input-date" /></Field>
                 <Field label="Time"><Input value={data.time_text} onChange={(e) => set({ time_text: e.target.value })} data-testid="input-time" /></Field>
               </div>
               <Field label="Venue"><Input value={data.venue} onChange={(e) => set({ venue: e.target.value })} data-testid="input-venue" /></Field>
-              <Field label="RSVP"><Input value={data.rsvp} onChange={(e) => set({ rsvp: e.target.value })} data-testid="input-rsvp" /></Field>
+              <Field label="Bottom line (RSVP / contact)"><Input value={data.rsvp} onChange={(e) => set({ rsvp: e.target.value })} data-testid="input-rsvp" /></Field>
 
               <div className="rounded-lg border border-stone-200 bg-stone-50 p-4">
                 <div className="chip-label mb-2 flex items-center gap-2"><Users className="h-3.5 w-3.5" /> Guests & RSVP</div>
@@ -334,6 +335,7 @@ export default function Editor() {
 
             {/* Design */}
             <TabsContent value="design" className="mt-6 space-y-5">
+              <TabHint>Fonts, colours, and where the text sits on the card.</TabHint>
               <Field label="Heading font">
                 <Select value={data.heading_font} onValueChange={(v) => set({ heading_font: v })}>
                   <SelectTrigger data-testid="input-heading-font"><SelectValue /></SelectTrigger>
@@ -386,6 +388,7 @@ export default function Editor() {
 
             {/* Media (background + photos + music) */}
             <TabsContent value="media" className="mt-6 space-y-6">
+              <TabHint>Background picture, photos on the card, and music guests hear.</TabHint>
               {/* Background */}
               <section>
                 <div className="chip-label mb-3 flex items-center gap-2"><ImageIcon className="h-3.5 w-3.5" /> Background</div>
@@ -495,6 +498,7 @@ export default function Editor() {
 
             {/* Effects */}
             <TabsContent value="fx" className="mt-6 space-y-5">
+              <TabHint>Animations guests see when they open your invitation.</TabHint>
               <div>
                 <div className="chip-label mb-1">Falling effects</div>
                 <p className="mb-3 text-xs text-stone-500">Shown over the live preview, and across the whole page for guests.</p>
@@ -565,7 +569,7 @@ export default function Editor() {
 
         {/* RIGHT — preview */}
         <main className="flex flex-col items-center">
-          <div className="mb-6 flex w-full items-center justify-between">
+          <div className="mb-6 flex w-full flex-wrap items-center justify-between gap-2">
             <span className="chip-label">{isPremium ? "Live preview · phone view" : "Live preview · click a photo to select"}</span>
             <div className="flex flex-wrap items-center gap-2">
               <Button variant="ghost" size="sm" onClick={() => save(true)} className="rounded-full" data-testid="editor-save-btn">
@@ -574,8 +578,8 @@ export default function Editor() {
               <Button variant="ghost" size="sm" onClick={previewAsGuest} className="rounded-full" data-testid="editor-guest-preview-btn">
                 <Eye className="mr-1.5 h-4 w-4" /> Preview as guest
               </Button>
-              <Button variant="ghost" size="sm" onClick={copyShareLink} className="rounded-full" data-testid="editor-share-btn">
-                <Share2 className="mr-1.5 h-4 w-4" /> Share link
+              <Button size="sm" onClick={openShare} className="rounded-full bg-[#D97757] text-white hover:bg-[#B85C3E]" data-testid="editor-share-btn">
+                <Share2 className="mr-1.5 h-4 w-4" /> Share
               </Button>
               {isPremium ? (
                 <Button variant="ghost" size="sm" onClick={() => setPreviewKey((k) => k + 1)} className="rounded-full">
@@ -600,28 +604,43 @@ export default function Editor() {
 
           {isPremium ? (
             // Phone-sized frame; the site scrolls inside it.
-            <div className="rounded-[2.5rem] border-[10px] border-[#1A1A1A] bg-[#1A1A1A] shadow-2xl">
-              <div className="relative h-[760px] w-[390px] overflow-y-auto rounded-[1.8rem] bg-white">
+            <div className="max-w-full rounded-[2.5rem] border-[10px] border-[#1A1A1A] bg-[#1A1A1A] shadow-2xl">
+              <div className="relative h-[70vh] max-h-[760px] w-[390px] max-w-full overflow-y-auto rounded-[1.8rem] bg-white sm:h-[760px]">
                 <PremiumSite key={previewKey} data={data} embedded shareLink={shareUrl(data.share_id)} />
               </div>
             </div>
           ) : (
-          <div className="relative overflow-hidden rounded-3xl bg-white/50 p-8">
+          <div className="relative w-full max-w-[664px] overflow-hidden rounded-3xl bg-white/50 p-3 sm:p-8">
             <EffectsLayer effects={data.effects || []} contained />
-            <InviteCanvas
-              ref={canvasRef}
-              data={data}
-              interactivePhotos
-              selectedPhotoId={selectedPhotoId}
-              onPhotoSelect={setSelectedPhotoId}
-              onPhotoUpdate={updatePhoto}
-            />
+            <ScaledBox width={600} height={800} className="mx-auto">
+              <InviteCanvas
+                ref={canvasRef}
+                data={data}
+                interactivePhotos
+                selectedPhotoId={selectedPhotoId}
+                onPhotoSelect={setSelectedPhotoId}
+                onPhotoUpdate={updatePhoto}
+              />
+            </ScaledBox>
           </div>
           )}
         </main>
       </div>
+      <ShareDialog
+        open={shareOpen}
+        onOpenChange={setShareOpen}
+        url={shareUrl(data.share_id)}
+        title={data.title}
+        invitationId={id}
+        onPreview={previewAsGuest}
+        onDownload={isPremium ? undefined : exportPng}
+      />
     </div>
   );
+}
+
+function TabHint({ children }) {
+  return <p className="-mt-2 mb-1 text-xs text-stone-500">{children}</p>;
 }
 
 function posLabel(v, plus, minus) {
