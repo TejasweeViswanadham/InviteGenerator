@@ -36,18 +36,22 @@ export const themeOf = (key) => THEMES[key] || THEMES.maroon;
 
 const ornate = (name) => `${process.env.PUBLIC_URL || ""}/backgrounds/${name}.svg`;
 const unsplash = (id, w = 900) => `https://images.unsplash.com/photo-${id}?w=${w}&q=80`;
-const SHIV_PARVATI =
-  "https://upload.wikimedia.org/wikipedia/commons/1/1d/An_Oleograph_of_Shiva%2C_Parvati_and_Nandi_by_Raja_Ravi_Varma.jpg";
-
-// People-free décor shots for the sample galleries.
-const DECOR_GALLERY = [
-  unsplash("1455659817273-f96807779a8a", 600),
-  unsplash("1605100804763-247f67b3557e", 600),
-  unsplash("1522673607200-164d1b6ce486", 600),
-  unsplash("1710587385270-08f30d66bf31", 600),
-  unsplash("1490750967868-88aa4486c946", 600),
-  unsplash("1519225421980-715cb0215aed", 600),
+// The site owner's illustrated wedding artwork (public/backgrounds/samples).
+const art = (name) => `${process.env.PUBLIC_URL || ""}/backgrounds/samples/${name}.jpg`;
+export const ARTWORK = [
+  { url: art("kalyanam"), label: "Srinivasa Kalyanam", focus: "center 82%" },
+  { url: art("kolam"), label: "Kolam", focus: "center 60%" },
+  { url: art("shiv-parvati-1"), label: "Shiv–Parvati (pink)", focus: "center 96%" },
+  { url: art("shiv-parvati-2"), label: "Shiv–Parvati (peacocks)", focus: "center 80%" },
+  { url: art("shiv-parvati-3"), label: "Sacred bond", focus: "center 72%" },
+  { url: art("vishnu-lakshmi-1"), label: "Gaja Lakshmi", focus: "center 75%" },
+  { url: art("vishnu-lakshmi-2"), label: "Vishnu–Lakshmi", focus: "center 82%" },
+  { url: art("nikah"), label: "Nikah", focus: "center bottom" },
+  { url: art("nikah-couple"), label: "Nikah (couple)", focus: "center 30%" },
+  { url: art("shiv-parvati-1-couple"), label: "Shiv–Parvati (couple)", focus: "center 20%" },
 ];
+const ART = Object.fromEntries(ARTWORK.map((a) => [a.label, a]));
+const galleryOf = (...labels) => labels.map((l) => ART[l].url);
 
 let eventSeq = 0;
 export const newEvent = (patch = {}) => ({
@@ -88,13 +92,14 @@ export const PREMIUM_TEMPLATES = [
     name: "Sacred Vows · Maroon & Gold",
     theme: "maroon",
     data: {
-      ...cardBase("Ananya & Karthik", ornate("ayodhya-saffron")),
+      ...cardBase("Ananya & Karthik", ART["Srinivasa Kalyanam"].url),
       theme: "maroon",
       effects: ["petals"],
       website: {
         seal_symbol: "ॐ",
         invocation: "Shubha Vivaha Mahotsavam",
-        hero_image: SHIV_PARVATI,
+        hero_image: ART["Srinivasa Kalyanam"].url,
+        hero_focus: ART["Srinivasa Kalyanam"].focus,
         blessing_line: "With the blessings of the Almighty and our elders, we joyfully invite you to the wedding of",
         bride: "Ananya Reddy",
         groom: "Karthik Varma",
@@ -120,7 +125,7 @@ export const PREMIUM_TEMPLATES = [
           map_query: "Sri Venkateswara Kalyana Vedika, Tirumala",
         },
         countdown_at: "2027-02-14T09:30",
-        gallery: DECOR_GALLERY,
+        gallery: galleryOf("Vishnu–Lakshmi", "Gaja Lakshmi", "Kolam", "Sacred bond", "Shiv–Parvati (peacocks)", "Shiv–Parvati (pink)"),
         blessings_text: "Your presence is our most cherished blessing. May your love and good wishes light the path of this new journey.",
         family: "With love, the Reddy & Varma families",
         closing: "Sri Venkateswara Prasannam",
@@ -135,13 +140,14 @@ export const PREMIUM_TEMPLATES = [
     name: "Sacred Vows · Emerald & Gold",
     theme: "emerald",
     data: {
-      ...cardBase("Ayesha & Imran", ornate("nikah-emerald")),
+      ...cardBase("Ayesha & Imran", ART.Nikah.url),
       theme: "emerald",
       effects: ["sparkles"],
       website: {
         seal_symbol: "☪",
         invocation: "Bismillah ir-Rahman ir-Rahim",
-        hero_image: "",
+        hero_image: ART["Nikah (couple)"].url,
+        hero_focus: ART["Nikah (couple)"].focus,
         blessing_line: "With the grace of Allah, we request the honour of your presence at the Nikah of",
         bride: "Ayesha Siddiqui",
         groom: "Imran Qureshi",
@@ -166,7 +172,7 @@ export const PREMIUM_TEMPLATES = [
           map_query: "Taj Krishna, Banjara Hills, Hyderabad",
         },
         countdown_at: "2027-10-15T16:30",
-        gallery: DECOR_GALLERY,
+        gallery: galleryOf("Nikah", "Sacred bond", "Kolam", "Gaja Lakshmi"),
         blessings_text: "Please keep the couple in your duas as they begin this beautiful journey together.",
         family: "With love, the Siddiqui & Qureshi families",
         closing: "JazakAllah Khair",
@@ -181,41 +187,43 @@ export const PREMIUM_TEMPLATES = [
     name: "Sacred Vows · Rose Gold",
     theme: "rose",
     data: {
-      ...cardBase("Sara & Daniel", ornate("lotus-rani")),
+      ...cardBase("Nandini & Rudra", ART["Shiv–Parvati (pink)"].url),
       theme: "rose",
       effects: ["petals"],
       website: {
-        seal_symbol: "♥",
-        invocation: "Together with their families",
-        hero_image: "",
-        blessing_line: "We joyfully invite you to celebrate the wedding of",
-        bride: "Sara Thomas",
-        groom: "Daniel Mathew",
-        date_line: "Saturday · 22 · May · 2027",
-        time_line: "Ceremony at 4:00 PM",
-        extra_line: "Reception to follow",
-        place_line: "by the lake in Kochi",
-        story_title: "Our Story",
-        story_quote: "Whatever our souls are made of, his and mine are the same.",
-        story_text: "From a chance meeting to a lifetime together — we can't wait to celebrate this day with the people we love most.",
-        reveal_events: false,
+        seal_symbol: "ॐ",
+        invocation: "Om Namah Shivaya",
+        hero_image: ART["Shiv–Parvati (couple)"].url,
+        hero_focus: ART["Shiv–Parvati (couple)"].focus,
+        blessing_line: "With the divine blessings of Lord Shiva and Goddess Parvati, we joyfully invite you to the wedding of",
+        bride: "Nandini Sharma",
+        groom: "Rudra Iyer",
+        date_line: "Sunday · 21 · February · 2027",
+        time_line: "Muhurtham · 10:30 AM",
+        extra_line: "Maha Shivaratri week",
+        place_line: "on the ghats of Varanasi",
+        story_title: "Shiv & Shakti",
+        story_quote: "As Shiva and Shakti are one, may two hearts become one.",
+        story_text: "With the blessings of our families, Nandini and Rudra begin their journey together. We would be honoured by your presence.",
+        reveal_events: true,
         events: [
-          newEvent({ name: "Ceremony", date: "Saturday, 22 May 2027", time: "4:00 PM", venue: "Lakeside Gardens, Kochi", note: "Please be seated by 3:45 PM." }),
-          newEvent({ name: "Cocktails", date: "Saturday, 22 May 2027", time: "5:30 PM", venue: "The Lawn Terrace", note: "" }),
-          newEvent({ name: "Reception & Dinner", date: "Saturday, 22 May 2027", time: "7:00 PM", venue: "The Grand Hall", note: "Dress code: Garden formal." }),
+          newEvent({ name: "Haldi", date: "Friday, 19 Feb 2027", time: "10:00 AM", venue: "Family residence, Varanasi", note: "Wear yellow!" }),
+          newEvent({ name: "Mehendi & Sangeet", date: "Saturday, 20 Feb 2027", time: "6:00 PM onwards", venue: "BrijRama Palace lawns", note: "Music, dance and henna." }),
+          newEvent({ name: "Muhurtham", date: "Sunday, 21 Feb 2027", time: "10:30 AM", venue: "Kashi Kalyana Mandapam, Varanasi", note: "Lunch will follow." }),
+          newEvent({ name: "Reception", date: "Sunday, 21 Feb 2027", time: "7:30 PM", venue: "BrijRama Palace, Darbhanga Ghat", note: "Dinner will be served." }),
         ],
         venue: {
-          title: "Where We Celebrate",
-          name: "Lakeside Gardens",
-          address: "Marine Drive, Kochi, Kerala 682031",
-          photo: unsplash("1522673607200-164d1b6ce486"),
-          map_query: "Marine Drive, Kochi",
+          title: "Blessings in Kashi",
+          name: "BrijRama Palace",
+          address: "Darbhanga Ghat, Varanasi, Uttar Pradesh 221001",
+          photo: unsplash("1582510003544-4d00b7f74220"),
+          map_query: "BrijRama Palace, Darbhanga Ghat, Varanasi",
         },
-        countdown_at: "2027-05-22T16:00",
-        gallery: DECOR_GALLERY,
-        blessings_text: "Thank you for being part of our story. Your love and support mean everything to us.",
-        family: "With love, the Thomas & Mathew families",
-        closing: "Forever begins today",
+        countdown_at: "2027-02-21T10:30",
+        gallery: galleryOf("Shiv–Parvati (peacocks)", "Sacred bond", "Srinivasa Kalyanam", "Vishnu–Lakshmi", "Gaja Lakshmi", "Kolam"),
+        blessings_text: "Your presence and blessings are the greatest gift as we begin this sacred journey.",
+        family: "With love, the Sharma & Iyer families",
+        closing: "Har Har Mahadev",
       },
     },
   },

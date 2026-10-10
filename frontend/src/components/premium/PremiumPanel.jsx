@@ -10,8 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { errorMessage, uploadFile } from "@/lib/api";
-import { EFFECT_OPTIONS, PHOTO_LIBRARY, fileUrl } from "@/lib/templates";
-import { THEMES, newEvent } from "@/lib/premium";
+import { EFFECT_OPTIONS, fileUrl } from "@/lib/templates";
+import { ARTWORK, THEMES, newEvent } from "@/lib/premium";
 
 const SEALS = [
   { v: "ॐ", label: "ॐ Om" },
@@ -123,14 +123,25 @@ export default function PremiumPanel({ data, set, setWebsite, musicPresets }) {
             >
               Initials
             </button>
-            {PHOTO_LIBRARY.deities.map((url) => (
-              <button key={url} onClick={() => setWebsite({ hero_image: url })}
-                className={`overflow-hidden rounded-lg border-2 ${w.hero_image === url ? "border-[#D97757]" : "border-stone-200"}`}>
-                <img src={url} alt="" className="h-20 w-full object-cover object-top" />
+            {ARTWORK.map((a) => (
+              <button key={a.url} title={a.label} onClick={() => setWebsite({ hero_image: a.url, hero_focus: a.focus })}
+                className={`overflow-hidden rounded-lg border-2 ${w.hero_image === a.url ? "border-[#D97757]" : "border-stone-200"}`}>
+                <img src={a.url} alt={a.label} className="h-20 w-full object-cover" style={{ objectPosition: a.focus }} />
               </button>
             ))}
           </div>
-          <UploadButton label="Upload your own image" disabled={uploading} onFile={(f) => upload(f, (path) => setWebsite({ hero_image: path }))} />
+          <UploadButton label="Upload your own image" disabled={uploading} onFile={(f) => upload(f, (path) => setWebsite({ hero_image: path, hero_focus: "center center" }))} />
+          {w.hero_image && (
+            <div className="mt-2 flex items-center gap-2 text-xs">
+              <span className="text-stone-500">Show which part:</span>
+              {[["Top", "center top"], ["Middle", "center center"], ["Bottom", "center 85%"]].map(([label, pos]) => (
+                <button key={label} onClick={() => setWebsite({ hero_focus: pos })}
+                  className={`rounded-full border px-2.5 py-1 ${(w.hero_focus || "center top") === pos ? "border-[#1A1A1A] bg-[#1A1A1A] text-white" : "border-stone-200"}`}>
+                  {label}
+                </button>
+              ))}
+            </div>
+          )}
         </Field>
 
         <div className="mt-4 rounded-lg border border-stone-200 bg-stone-50 p-3">

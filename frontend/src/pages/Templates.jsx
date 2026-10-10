@@ -181,7 +181,7 @@ function PremiumCardPreview({ tpl }) {
         <div className="text-[11px] font-semibold tracking-[0.15em]" style={{ color: t.gold }}>{w.invocation}</div>
         <div className="mt-3 flex h-36 w-full items-center justify-center overflow-hidden rounded border-2" style={{ borderColor: t.gold, background: `linear-gradient(160deg, ${t.primary}, ${t.primaryDark})` }}>
           {w.hero_image ? (
-            <img src={w.hero_image} alt="" className="h-full w-full object-cover object-top" />
+            <img src={w.hero_image} alt="" className="h-full w-full object-cover" style={{ objectPosition: w.hero_focus || "center top" }} />
           ) : (
             <span style={{ fontFamily: "'Great Vibes', cursive", fontSize: 54, color: t.goldLight }}>
               {first(w.bride)[0]}&amp;{first(w.groom)[0]}

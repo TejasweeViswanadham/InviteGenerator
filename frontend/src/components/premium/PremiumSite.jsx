@@ -111,7 +111,7 @@ function EnvelopeScreen({ w, pos, onOpen, embedded }) {
         <div className="mt-2 text-sm italic opacity-70">The wedding invitation of</div>
         <div className="mx-auto mt-5 overflow-hidden rounded-md border-2" style={{ borderColor: "var(--g)" }}>
           {w.hero_image ? (
-            <img src={fileUrl(w.hero_image)} alt="" className="h-64 w-full object-cover object-top" />
+            <img src={fileUrl(w.hero_image)} alt="" className="h-72 w-full object-cover" style={{ objectPosition: w.hero_focus || "center top" }} />
           ) : (
             <div className="flex h-56 items-center justify-center" style={{ background: "linear-gradient(160deg, var(--p), var(--pd))" }}>
               <Monogram w={w} size={130} />
@@ -143,7 +143,7 @@ function HeroCard({ w }) {
       <Ticks light />
       <div className="mx-auto mt-5 h-36 w-36 overflow-hidden rounded-full border-4" style={{ borderColor: "var(--g)", background: "var(--paper)" }}>
         {w.hero_image ? (
-          <img src={fileUrl(w.hero_image)} alt="" className="h-full w-full object-cover object-top" />
+          <img src={fileUrl(w.hero_image)} alt="" className="h-full w-full object-cover" style={{ objectPosition: w.hero_focus || "center top" }} />
         ) : (
           <div className="flex h-full items-center justify-center" style={{ background: "var(--pd)" }}>
             <Monogram w={w} size={70} />

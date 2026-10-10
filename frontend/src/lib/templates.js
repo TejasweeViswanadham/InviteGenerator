@@ -118,10 +118,8 @@ export const HERO_BACKGROUNDS = [
 
 // Curated photo library — clip-art / portrait style shots users can drop on canvas.
 export const PHOTO_LIBRARY = {
-  deities: [
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/An_Oleograph_of_Shiva%2C_Parvati_and_Nandi_by_Raja_Ravi_Varma.jpg/600px-An_Oleograph_of_Shiva%2C_Parvati_and_Nandi_by_Raja_Ravi_Varma.jpg",
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d1/Ramapanchayan%2C_Raja_Ravi_Varma_%28Lithograph%29.jpg/600px-Ramapanchayan%2C_Raja_Ravi_Varma_%28Lithograph%29.jpg",
-    "https://upload.wikimedia.org/wikipedia/commons/thumb/a/aa/Vishnu_Laxmi.jpg/600px-Vishnu_Laxmi.jpg",
+  artwork: [
+    ART.kalyanam, ART.shivParvati2, ART.shivParvati3, ART.vishnuLakshmi1, ART.vishnuLakshmi2, ART.nikah,
   ],
   temple: [
     "https://images.unsplash.com/photo-1606293926075-69a00dbfde81?w=600&q=80",
@@ -949,6 +947,8 @@ export function shareUrl(shareId) {
 export function fileUrl(pathOrUrl) {
   if (!pathOrUrl) return "";
   if (pathOrUrl.startsWith("data:") || pathOrUrl.startsWith("http")) return pathOrUrl;
+  // Images shipped with the app (/InviteGenerator/backgrounds/…) — not backend uploads.
+  if (pathOrUrl.startsWith("/") || pathOrUrl.startsWith("./")) return pathOrUrl;
   const backend = process.env.REACT_APP_BACKEND_URL;
   const token = localStorage.getItem("ic_token");
   const qs = token ? `?auth=${encodeURIComponent(token)}` : "";
