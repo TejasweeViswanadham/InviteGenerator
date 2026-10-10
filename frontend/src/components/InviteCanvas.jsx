@@ -25,6 +25,7 @@ const InviteCanvas = forwardRef(function InviteCanvas(
     heading_font,
     body_font,
     overlay_opacity,
+    text_offset = 0,
     photos = [],
   } = data;
 
@@ -155,10 +156,11 @@ const InviteCanvas = forwardRef(function InviteCanvas(
 
       <div
         className="relative flex h-full flex-col items-center justify-between px-12 py-16 text-center pointer-events-none"
-        style={{ fontFamily: body_font }}
+        // text_offset lowers the text block, e.g. into the window of an arch background.
+        style={{ fontFamily: body_font, paddingTop: 64 + (Number(text_offset) || 0) * 8 }}
       >
         <div className="w-full">
-          <div className="mx-auto mb-2 h-px w-16" style={{ background: accent_color }} />
+          {hosts && <div className="mx-auto mb-2 h-px w-16" style={{ background: accent_color }} />}
           <div
             className="text-[10px] uppercase"
             style={{ letterSpacing: "0.42em", color: accent_color }}

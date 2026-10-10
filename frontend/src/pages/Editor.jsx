@@ -366,6 +366,10 @@ export default function Editor() {
                 <Slider value={[data.overlay_opacity]} onValueChange={(v) => set({ overlay_opacity: v[0] })} min={0} max={0.85} step={0.05} data-testid="input-overlay" />
               </Field>
 
+              <Field label={`Text position: ${Math.round(data.text_offset || 0) === 0 ? "centre" : `lowered ${Math.round(data.text_offset)}%`}`}>
+                <Slider value={[data.text_offset || 0]} onValueChange={(v) => set({ text_offset: v[0] })} min={0} max={20} step={1} data-testid="input-text-offset" />
+              </Field>
+
               <Field label="Envelope style (public view)">
                 <Select value={data.envelope_style || "none"} onValueChange={(v) => set({ envelope_style: v })}>
                   <SelectTrigger data-testid="input-envelope"><SelectValue /></SelectTrigger>
