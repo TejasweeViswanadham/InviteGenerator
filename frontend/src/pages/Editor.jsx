@@ -366,8 +366,11 @@ export default function Editor() {
                 <Slider value={[data.overlay_opacity]} onValueChange={(v) => set({ overlay_opacity: v[0] })} min={0} max={0.85} step={0.05} data-testid="input-overlay" />
               </Field>
 
-              <Field label={`Text position: ${Math.round(data.text_offset || 0) === 0 ? "centre" : `lowered ${Math.round(data.text_offset)}%`}`}>
-                <Slider value={[data.text_offset || 0]} onValueChange={(v) => set({ text_offset: v[0] })} min={0} max={20} step={1} data-testid="input-text-offset" />
+              <Field label={`Text up / down: ${posLabel(data.text_offset, "lower", "higher")}`}>
+                <Slider value={[data.text_offset || 0]} onValueChange={(v) => set({ text_offset: v[0] })} min={-40} max={40} step={1} data-testid="input-text-offset" />
+              </Field>
+              <Field label={`Text left / right: ${posLabel(data.text_x, "right", "left")}`}>
+                <Slider value={[data.text_x || 0]} onValueChange={(v) => set({ text_x: v[0] })} min={-25} max={25} step={1} data-testid="input-text-x" />
               </Field>
 
               <Field label="Envelope style (public view)">
@@ -619,6 +622,11 @@ export default function Editor() {
       </div>
     </div>
   );
+}
+
+function posLabel(v, plus, minus) {
+  const n = Math.round(Number(v) || 0);
+  return n === 0 ? "centre" : `${Math.abs(n)} ${n > 0 ? plus : minus}`;
 }
 
 function GuestPreviewHint({ onPreview, what }) {

@@ -145,7 +145,8 @@ class InvitationBase(BaseModel):
     video_url: str = ""
     # Premium wedding website: layout "premium" renders a multi-section site
     # (events, venue, countdown, gallery) from `website` in `theme` colours.
-    text_offset: float = 0  # % of card height to push the text block down
+    text_offset: float = 0  # +down / -up, in steps of 1% of card height
+    text_x: float = 0  # +right / -left
     layout: str = "card"  # card | premium
     theme: str = ""  # maroon | emerald | rose
     website: Dict[str, Any] = {}
@@ -181,6 +182,7 @@ class InvitationUpdate(BaseModel):
     scratch_reveal: Optional[bool] = None
     video_url: Optional[str] = None
     text_offset: Optional[float] = None
+    text_x: Optional[float] = None
     layout: Optional[str] = None
     theme: Optional[str] = None
     website: Optional[Dict[str, Any]] = None

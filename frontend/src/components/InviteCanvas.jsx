@@ -26,6 +26,7 @@ const InviteCanvas = forwardRef(function InviteCanvas(
     body_font,
     overlay_opacity,
     text_offset = 0,
+    text_x = 0,
     photos = [],
   } = data;
 
@@ -156,8 +157,9 @@ const InviteCanvas = forwardRef(function InviteCanvas(
 
       <div
         className="relative flex h-full flex-col items-center justify-between px-12 py-16 text-center pointer-events-none"
-        // text_offset lowers the text block, e.g. into the window of an arch background.
-        style={{ fontFamily: body_font, paddingTop: 64 + (Number(text_offset) || 0) * 8 }}
+        // text_offset / text_x move the text block into the clear part of an illustrated
+        // background: extra padding on one side pushes it the other way.
+        style={{ fontFamily: body_font, ...textPadding(text_offset, text_x) }}
       >
         <div className="w-full">
           {hosts && <div className="mx-auto mb-2 h-px w-16" style={{ background: accent_color }} />}
@@ -227,7 +229,7 @@ const InviteCanvas = forwardRef(function InviteCanvas(
               {rsvp.toUpperCase()}
             </p>
           )}
-          <div className="mx-auto mt-3 h-px w-16" style={{ background: accent_color }} />
+          {rsvp && <div className="mx-auto mt-3 h-px w-16" style={{ background: accent_color }} />}
         </div>
       </div>
     </div>
@@ -235,3 +237,14 @@ const InviteCanvas = forwardRef(function InviteCanvas(
 });
 
 export default InviteCanvas;
+
+function textPadding(dy, dx) {
+  const y = Number(dy) || 0;
+  const x = Number(dx) || 0;
+  return {
+    paddingTop: 64 + Math.max(0, y) * 8,
+    paddingBottom: 64 + Math.max(0, -y) * 8,
+    paddingLeft: 48 + Math.max(0, x) * 8,
+    paddingRight: 48 + Math.max(0, -x) * 8,
+  };
+}
