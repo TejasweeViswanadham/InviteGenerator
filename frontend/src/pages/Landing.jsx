@@ -100,7 +100,7 @@ export default function Landing() {
       <div className="hairline mx-auto max-w-7xl" />
 
       {/* Features */}
-      <section id="features" className="mx-auto max-w-7xl px-6 py-24 sm:px-10">
+      <section id="features" className="mx-auto max-w-7xl scroll-mt-20 px-6 py-24 sm:px-10">
         <div className="mb-16 max-w-2xl">
           <span className="chip-label">Everything you need</span>
           <h2 className="font-display mt-3 text-4xl sm:text-5xl">
@@ -150,7 +150,7 @@ export default function Landing() {
       <div className="hairline mx-auto max-w-7xl" />
 
       {/* Gallery */}
-      <section id="gallery" className="mx-auto max-w-7xl px-6 py-24 sm:px-10">
+      <section id="gallery" className="mx-auto max-w-7xl scroll-mt-20 px-6 py-24 sm:px-10">
         <div className="mb-16 max-w-2xl">
           <span className="chip-label">Made for every moment</span>
           <h2 className="font-display mt-3 text-4xl sm:text-5xl">
