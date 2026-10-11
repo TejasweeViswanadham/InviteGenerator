@@ -21,8 +21,11 @@ export default function Templates() {
     if (tab === "all") return TEMPLATES;
     return TEMPLATES.filter((t) => t.event_type === tab);
   }, [tab]);
-  // Style chips (South Indian, Shiv–Parvati, Nikah…) for what's in the current tab.
-  const styles = useMemo(() => [...new Set(byTab.map((t) => t.style).filter(Boolean))], [byTab]);
+  // Style chips (South Indian, Shiv–Parvati, Nikah…) only on the Wedding tab.
+  const styles = useMemo(
+    () => (tab === "wedding" ? [...new Set(byTab.map((t) => t.style).filter(Boolean))] : []),
+    [tab, byTab]
+  );
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return byTab.filter((t) => {
