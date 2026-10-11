@@ -236,25 +236,56 @@ function PremiumCardPreview({ tpl }) {
   const t = themeOf(tpl.theme);
   const w = tpl.data.website || {};
   const first = (n) => (n || "").trim().split(/\s+/)[0] || "";
+  const date = w.countdown_at ? new Date(w.countdown_at) : null;
+  const dateText = date && !Number.isNaN(date.getTime())
+    ? date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+    : "";
+  const place = (w.venue?.address || "").split(",").map((x) => x.trim()).filter(Boolean).slice(-2, -1)[0] || w.venue?.name || "";
+  const features = ["Events", "Venue map", "Countdown", "Gallery"];
   return (
     <div className="relative flex aspect-[3/4] flex-col items-center overflow-hidden" style={{ background: t.paper }}>
-      <div className="h-12 w-full shrink-0" style={{ background: t.primary, clipPath: "polygon(0 0, 100% 0, 50% 100%)" }} />
-      <div className="mx-6 -mt-1 flex flex-1 flex-col items-center rounded-sm bg-white px-5 pb-5 pt-4 text-center shadow-xl" style={{ fontFamily: "'Cormorant Garamond', serif" }}>
+      <div className="h-10 w-full shrink-0" style={{ background: t.primary, clipPath: "polygon(0 0, 100% 0, 50% 100%)" }} />
+      <div
+        className="mx-5 -mt-1 mb-4 flex flex-1 flex-col items-center rounded-md bg-white px-4 pb-4 pt-3 text-center shadow-xl"
+        style={{ fontFamily: "'Cormorant Garamond', serif", width: "calc(100% - 2.5rem)" }}
+      >
         <div className="text-[11px] font-semibold tracking-[0.15em]" style={{ color: t.gold }}>{w.invocation}</div>
-        <div className="mt-3 flex h-36 w-full items-center justify-center overflow-hidden rounded border-2" style={{ borderColor: t.gold, background: `linear-gradient(160deg, ${t.primary}, ${t.primaryDark})` }}>
+        {/* main image fills the top half of the card */}
+        <div
+          className="relative mt-2 w-full flex-1 overflow-hidden rounded border-2"
+          style={{ borderColor: t.gold, background: `linear-gradient(160deg, ${t.primary}, ${t.primaryDark})`, minHeight: 0 }}
+        >
           {w.hero_image ? (
-            <img src={w.hero_image} alt="" className="h-full w-full object-cover" style={{ objectPosition: w.hero_focus || "center top" }} />
+            // absolutely positioned so the image's own size can't push the text off the card
+            <img src={w.hero_image} alt="" className="absolute inset-0 h-full w-full object-cover" style={{ objectPosition: w.hero_focus || "center top" }} />
           ) : (
-            <span style={{ fontFamily: "'Great Vibes', cursive", fontSize: 54, color: t.goldLight }}>
+            <div className="absolute inset-0 flex items-center justify-center" style={{ fontFamily: "'Great Vibes', cursive", fontSize: 54, color: t.goldLight }}>
               {first(w.bride)[0]}&amp;{first(w.groom)[0]}
-            </span>
+            </div>
           )}
         </div>
-        <div className="mt-3 text-3xl" style={{ fontFamily: "'Great Vibes', cursive", color: t.primary }}>
+        <div className="mt-2 text-3xl leading-tight" style={{ fontFamily: "'Great Vibes', cursive", color: t.primary }}>
           {first(w.bride)} &amp; {first(w.groom)}
         </div>
-        <div className="mt-auto flex h-14 w-14 items-center justify-center rounded-full text-2xl" style={{ background: t.primary, color: t.goldLight, boxShadow: `0 0 0 6px ${t.gold}40` }}>
-          {w.seal_symbol}
+        <div className="my-1.5 flex w-3/4 items-center gap-2">
+          <span className="h-px flex-1" style={{ background: t.gold }} />
+          <span className="h-1.5 w-1.5 rounded-full" style={{ background: t.gold }} />
+          <span className="h-px flex-1" style={{ background: t.gold }} />
+        </div>
+        <div className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: t.ink }}>
+          {[dateText, place].filter(Boolean).join(" · ")}
+        </div>
+        {/* what the website includes */}
+        <div className="mt-2 flex flex-wrap justify-center gap-1" style={{ fontFamily: "'Outfit', sans-serif" }}>
+          {features.map((f) => (
+            <span key={f} className="rounded-full px-2 py-0.5 text-[10px]" style={{ background: `${t.gold}22`, color: t.primaryDark }}>{f}</span>
+          ))}
+        </div>
+        <div className="mt-auto flex items-center gap-3 pt-2">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full text-xl" style={{ background: t.primary, color: t.goldLight, boxShadow: `0 0 0 5px ${t.gold}40` }}>
+            {w.seal_symbol}
+          </div>
+          <span className="text-xs italic" style={{ color: t.primary }}>tap the seal to open</span>
         </div>
       </div>
       <span className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-[#1A1A1A] px-2.5 py-1 text-[10px] uppercase tracking-[0.2em] text-[#F2D488]">
