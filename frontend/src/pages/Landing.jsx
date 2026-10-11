@@ -1,16 +1,34 @@
 import { Link } from "react-router-dom";
 import Nav from "@/components/Nav";
 import { Button } from "@/components/ui/button";
-import { HERO_BACKGROUNDS, BACKGROUND_LIBRARY } from "@/lib/templates";
-import { Sparkles, ImageIcon, Download, Share2 } from "lucide-react";
+import InviteCanvas from "@/components/InviteCanvas";
+import ScaledBox from "@/components/ScaledBox";
+import { TEMPLATES } from "@/lib/templates";
+import { Crown, ImageIcon, Share2, Sparkles } from "lucide-react";
+
+const tpl = (id) => TEMPLATES.find((t) => t.id === id);
+
+// Real templates, drawn exactly as the editor draws them.
+const HERO = [tpl("wed-kolam"), tpl("wed-srinivasa-kalyanam"), tpl("wed-nikah")];
 
 const gallery = [
-  { img: BACKGROUND_LIBRARY.wedding[0], label: "Weddings" },
-  { img: BACKGROUND_LIBRARY.birthday[0], label: "Birthdays" },
-  { img: BACKGROUND_LIBRARY.anniversary[0], label: "Anniversaries" },
-  { img: BACKGROUND_LIBRARY.baby_shower[0], label: "Baby showers" },
-  { img: BACKGROUND_LIBRARY.corporate[0], label: "Corporate" },
+  { tpl: tpl("wed-sacred-bond"), label: "Weddings" },
+  { tpl: tpl("bday-balloons"), label: "Birthdays" },
+  { tpl: tpl("anniv-ruby"), label: "Anniversaries" },
+  { tpl: tpl("baby-neutral"), label: "Baby showers" },
+  { tpl: tpl("corp-gala"), label: "Corporate" },
 ];
+
+function CardThumb({ t, width, className = "", style }) {
+  const s = width / 600;
+  return (
+    <div className={`overflow-hidden rounded-xl shadow-2xl ${className}`} style={{ width, height: 800 * s, ...style }}>
+      <div style={{ width: 600, height: 800, transform: `scale(${s})`, transformOrigin: "top left" }}>
+        <InviteCanvas data={{ ...t.data, photos: t.data.photos || [] }} />
+      </div>
+    </div>
+  );
+}
 
 export default function Landing() {
   return (
@@ -21,7 +39,7 @@ export default function Landing() {
       <section className="mx-auto grid max-w-7xl grid-cols-1 items-center gap-16 px-6 pb-24 pt-16 sm:px-10 lg:grid-cols-2 lg:pt-24">
         <div className="fade-up">
           <span className="chip-label" data-testid="hero-eyebrow">
-            Invitations · Templates · AI Design
+            Invitations · Wedding websites · RSVPs
           </span>
           <h1 className="font-display mt-4 text-5xl leading-[1.05] sm:text-6xl lg:text-7xl">
             Invitations,
@@ -29,9 +47,9 @@ export default function Landing() {
             <em className="font-light text-[#D97757]">beautifully crafted.</em>
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-stone-700">
-            Design gorgeous wedding cards, birthday invites, baby showers and
-            corporate announcements in minutes. Curated presets, AI-generated
-            backgrounds and copy — all in one calm little studio.
+            Design beautiful wedding cards — South Indian, North Indian, devotional
+            and Nikah — plus birthday, anniversary and corporate invites in minutes.
+            Share them on WhatsApp and collect RSVPs, all in one calm little studio.
           </p>
 
           <div className="mt-10 flex flex-wrap items-center gap-4">
@@ -56,34 +74,25 @@ export default function Landing() {
             </Link>
           </div>
 
-          <div className="mt-10 flex items-center gap-6 text-xs text-stone-500">
-            <span>◆ No credit card</span>
-            <span>◆ Export PNG / PDF</span>
-            <span>◆ Share by link</span>
+          <div className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs text-stone-500">
+            <span>◆ Share on WhatsApp</span>
+            <span>◆ Collect RSVPs</span>
+            <span>◆ Download PNG / PDF</span>
           </div>
         </div>
 
         <div className="fade-up stagger-2 relative">
-          <div className="grid grid-cols-2 gap-4">
-            <img
-              src={HERO_BACKGROUNDS[0]}
-              alt="Warm paper texture"
-              className="col-span-2 h-64 w-full rounded-2xl object-cover"
-            />
-            <img
-              src={BACKGROUND_LIBRARY.wedding[0]}
-              alt="Wedding preview"
-              className="h-56 w-full rounded-2xl object-cover"
-            />
-            <img
-              src={BACKGROUND_LIBRARY.birthday[0]}
-              alt="Birthday preview"
-              className="h-56 w-full rounded-2xl object-cover"
-            />
-          </div>
-          <div className="absolute -bottom-4 -left-4 hidden rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-lg sm:block">
+          {/* Three real templates fanned out */}
+          <ScaledBox width={560} height={460} className="mx-auto">
+            <div className="relative h-[460px] w-[560px]">
+              <CardThumb t={HERO[0]} width={230} className="absolute left-0 top-12" style={{ transform: "rotate(-8deg)" }} />
+              <CardThumb t={HERO[2]} width={230} className="absolute right-0 top-12" style={{ transform: "rotate(8deg)" }} />
+              <CardThumb t={HERO[1]} width={270} className="absolute left-1/2 top-0 z-10 -translate-x-1/2" />
+            </div>
+          </ScaledBox>
+          <div className="absolute -bottom-4 left-0 z-20 hidden rounded-2xl border border-stone-200 bg-white px-4 py-3 shadow-lg sm:block">
             <div className="chip-label">Live template</div>
-            <div className="font-display text-lg">Anna & Ethan · 2026</div>
+            <div className="font-display text-lg">{HERO[1].name}</div>
           </div>
         </div>
       </section>
@@ -104,22 +113,22 @@ export default function Landing() {
             {
               icon: <ImageIcon className="h-5 w-5" />,
               title: "Curated templates",
-              body: "Hand-designed starters for weddings, birthdays, baby showers, anniversaries and corporate events.",
+              body: "South Indian, North Indian, devotional and Nikah designs, plus birthdays, anniversaries, baby showers and corporate events.",
             },
             {
-              icon: <Sparkles className="h-5 w-5" />,
-              title: "AI copy + art",
-              body: "Claude writes elegant invitation copy. Gemini Nano Banana paints custom backgrounds.",
-            },
-            {
-              icon: <Download className="h-5 w-5" />,
-              title: "Export anywhere",
-              body: "Download as high-resolution PNG or print-ready PDF in a single click.",
+              icon: <Crown className="h-5 w-5" />,
+              title: "Wedding websites",
+              body: "Premium invites that open from a sealed envelope, with your events, venue map, countdown, gallery and music.",
             },
             {
               icon: <Share2 className="h-5 w-5" />,
-              title: "Share by link",
-              body: "Every invite has a public shareable URL — no downloads required for guests.",
+              title: "Share & RSVP",
+              body: "Send one link on WhatsApp or email. Guests reply in a tap and you see who's coming.",
+            },
+            {
+              icon: <Sparkles className="h-5 w-5" />,
+              title: "AI wording & downloads",
+              body: "Let AI suggest your invitation wording, then download a PNG or print-ready PDF.",
             },
           ].map((f, i) => (
             <div
@@ -151,21 +160,20 @@ export default function Landing() {
 
         <div className="grid grid-cols-2 gap-6 md:grid-cols-5">
           {gallery.map((g, i) => (
-            <div
+            <Link
+              to="/register"
               key={i}
-              className="fade-up group relative aspect-[3/4] overflow-hidden rounded-2xl"
+              className="fade-up group relative block overflow-hidden rounded-2xl border border-stone-200 bg-white smooth hover-lift"
               style={{ animationDelay: `${0.08 * i}s` }}
               data-testid={`gallery-item-${g.label.toLowerCase()}`}
             >
-              <img
-                src={g.img}
-                alt={g.label}
-                className="h-full w-full object-cover smooth group-hover:scale-105"
-              />
-              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-4">
-                <span className="chip-label text-white/90">{g.label}</span>
+              <ScaledBox width={600} height={800}>
+                <InviteCanvas data={{ ...g.tpl.data, photos: g.tpl.data.photos || [] }} />
+              </ScaledBox>
+              <div className="border-t border-stone-200 px-3 py-2.5">
+                <span className="chip-label">{g.label}</span>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </section>

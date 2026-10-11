@@ -41,7 +41,7 @@ export default function Register() {
           <span className="chip-label">Create account</span>
           <h1 className="font-display mt-3 text-4xl">Begin your first invite</h1>
           <p className="mt-2 text-sm text-stone-600">
-            Just an email and password — no credit card required.
+            Just your name, email and a password to get started.
           </p>
         </div>
 
