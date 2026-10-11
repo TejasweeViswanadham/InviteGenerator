@@ -40,7 +40,7 @@ export default function Nav({ variant = "app" }) {
       data-testid="app-nav"
     >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-10">
-        <Link to={user ? "/dashboard" : "/"} className="flex items-center gap-2" data-testid="nav-logo">
+        <Link to="/" className="flex items-center gap-2" data-testid="nav-logo">
           <span
             className="inline-block h-8 w-8 rounded-full"
             style={{ background: "radial-gradient(circle at 30% 30%, #E7B98A, #D97757 55%, #8A4A31)" }}

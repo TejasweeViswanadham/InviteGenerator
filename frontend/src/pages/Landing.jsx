@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import Nav from "@/components/Nav";
+import { useAuth } from "@/lib/auth.jsx";
 import { Button } from "@/components/ui/button";
 import InviteCanvas from "@/components/InviteCanvas";
 import ScaledBox from "@/components/ScaledBox";
@@ -31,6 +32,9 @@ function CardThumb({ t, width, className = "", style }) {
 }
 
 export default function Landing() {
+  // Signed-in users can still visit the home page; its buttons take them into the app.
+  const { user } = useAuth();
+  const startTo = user ? "/templates" : "/register";
   return (
     <div className="min-h-screen bg-[#FAF9F6]">
       <Nav variant="landing" />
@@ -53,23 +57,23 @@ export default function Landing() {
           </p>
 
           <div className="mt-10 flex flex-wrap items-center gap-4">
-            <Link to="/register">
+            <Link to={startTo}>
               <Button
                 size="lg"
                 className="rounded-full bg-[#1A1A1A] px-8 py-6 text-base text-white hover:bg-[#D97757]"
                 data-testid="hero-get-started-btn"
               >
-                Start creating — free
+                {user ? "Start a new invitation" : "Start creating — free"}
               </Button>
             </Link>
-            <Link to="/login">
+            <Link to={user ? "/dashboard" : "/login"}>
               <Button
                 variant="ghost"
                 size="lg"
                 className="rounded-full px-6 py-6 text-base"
                 data-testid="hero-signin-btn"
               >
-                I already have an account
+                {user ? "My invitations" : "I already have an account"}
               </Button>
             </Link>
           </div>
@@ -161,7 +165,7 @@ export default function Landing() {
         <div className="grid grid-cols-2 gap-6 md:grid-cols-5">
           {gallery.map((g, i) => (
             <Link
-              to="/register"
+              to={startTo}
               key={i}
               className="fade-up group relative block overflow-hidden rounded-2xl border border-stone-200 bg-white smooth hover-lift"
               style={{ animationDelay: `${0.08 * i}s` }}
@@ -186,7 +190,7 @@ export default function Landing() {
             Your next invitation is <em className="text-[#D97757]">two minutes away.</em>
           </h2>
           <div className="mt-10">
-            <Link to="/register">
+            <Link to={startTo}>
               <Button
                 size="lg"
                 className="rounded-full bg-[#1A1A1A] px-10 py-6 text-base text-white hover:bg-[#D97757]"
