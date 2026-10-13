@@ -9,6 +9,19 @@ import { Button } from "@/components/ui/button";
 import { Crown, Plus, Search, X } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
+// "All" tab: interleave event types round-robin (wedding, birthday, …) so every
+// event shows up near the top, keeping each event's own template order.
+const ALL_MIXED = (() => {
+  const groups = EVENT_TYPES.map((e) => TEMPLATES.filter((t) => t.event_type === e.id));
+  const known = new Set(EVENT_TYPES.map((e) => e.id));
+  const rest = TEMPLATES.filter((t) => !known.has(t.event_type));
+  const out = [];
+  for (let i = 0; groups.some((g) => i < g.length); i++) {
+    for (const g of groups) if (i < g.length) out.push(g[i]);
+  }
+  return [...out, ...rest];
+})();
+
 export default function Templates() {
   const navigate = useNavigate();
   const [tab, setTab] = useState("all");
@@ -18,7 +31,7 @@ export default function Templates() {
 
   const byTab = useMemo(() => {
     if (tab === "premium") return PREMIUM_TEMPLATES;
-    if (tab === "all") return TEMPLATES;
+    if (tab === "all") return ALL_MIXED;
     return TEMPLATES.filter((t) => t.event_type === tab);
   }, [tab]);
   // Style chips (South Indian, Shiv–Parvati, Nikah…) only on the Wedding tab.
