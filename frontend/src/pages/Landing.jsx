@@ -52,7 +52,7 @@ export default function Landing() {
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-relaxed text-stone-700">
             Design beautiful wedding cards — South Indian, North Indian, devotional
-            and Nikah — plus birthday, anniversary and corporate invites in minutes.
+            and Nikah — plus birthday, anniversary, housewarming and corporate invites in minutes.
             Share them on WhatsApp and collect RSVPs, all in one calm little studio.
           </p>
 
