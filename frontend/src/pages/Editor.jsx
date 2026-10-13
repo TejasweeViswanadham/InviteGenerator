@@ -24,8 +24,10 @@ import PremiumSite from "@/components/premium/PremiumSite";
 import PremiumPanel from "@/components/premium/PremiumPanel";
 import {
   BACKGROUND_LIBRARY, FONT_OPTIONS, COLOR_SWATCHES, EVENT_TYPES,
-  ENVELOPE_STYLES, EFFECT_OPTIONS, MUSIC_PRESETS as FALLBACK_PRESETS, PHOTO_LIBRARY, fileUrl, shareUrl,
+  ENVELOPE_STYLES, EFFECT_OPTIONS, MUSIC_PRESETS as FALLBACK_PRESETS, EVENT_PHOTO_QUERIES, photoQueryFor,
+  fileUrl, shareUrl,
 } from "@/lib/templates";
+import StockPhotoPicker from "@/components/StockPhotoPicker";
 import { toPng, toJpeg } from "html-to-image";
 import jsPDF from "jspdf";
 import {
@@ -140,6 +142,7 @@ export default function Editor() {
   };
 
   const backgrounds = useMemo(() => BACKGROUND_LIBRARY[data?.event_type] || [], [data?.event_type]);
+  const photoQuery = useMemo(() => photoQueryFor(data), [data?.event_type, data?.background_url]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------- Photos ----------------
   const addPhotoFromLibrary = (url) => {
@@ -411,17 +414,11 @@ export default function Editor() {
               {/* Photos */}
               <section>
                 <div className="chip-label mb-3 flex items-center gap-2"><ImageIcon className="h-3.5 w-3.5" /> Photos on canvas</div>
-                <div className="grid grid-cols-4 gap-2">
-                  {Object.entries(PHOTO_LIBRARY).flatMap(([, urls]) =>
-                    urls.map((url) => (
-                      <button key={url} onClick={() => addPhotoFromLibrary(url)}
-                        className="overflow-hidden rounded-lg border border-stone-200 smooth hover:border-[#D97757]"
-                        data-testid="photo-lib-btn">
-                        <img src={url} alt="" className="h-16 w-full object-cover" />
-                      </button>
-                    ))
-                  )}
-                </div>
+                <StockPhotoPicker
+                  themeQuery={photoQuery}
+                  eventQuery={EVENT_PHOTO_QUERIES[data.event_type]}
+                  onPick={addPhotoFromLibrary}
+                />
                 <label className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-dashed border-stone-300 py-3 text-xs text-stone-600 hover:border-[#D97757] hover:text-[#D97757] smooth" data-testid="photo-upload-label">
                   <Upload className="h-3.5 w-3.5" /> Upload your photo (jpg/png · max 6MB)
                   <input type="file" accept="image/*" className="hidden" onChange={uploadPhoto} data-testid="photo-upload-input" />

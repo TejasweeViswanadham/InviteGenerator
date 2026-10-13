@@ -203,6 +203,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "South Indian",
     name: "Temple Gopuram",
+    photo_query: "south indian temple wedding",
     preview: IMG.gopuram,
     data: {
       title: "Sravani & Venkat",
@@ -228,6 +229,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "South Indian",
     name: "Kerala Backwaters",
+    photo_query: "kerala wedding",
     preview: IMG.backwaters,
     data: {
       title: "Anjali & Nikhil",
@@ -252,6 +254,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "South Indian",
     name: "Kolam & Kuthuvilakku",
+    photo_query: "kolam rangoli",
     preview: ART.kolam,
     data: {
       title: "Meera & Arvind",
@@ -279,6 +282,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "South Indian",
     name: "Srinivasa Kalyanam",
+    photo_query: "south indian wedding ceremony",
     preview: ART.kalyanam,
     data: {
       title: "Sravya & Venkat",
@@ -306,6 +310,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "Shiv–Parvati",
     name: "Shiv Shakti",
+    photo_query: "hindu wedding ceremony",
     preview: ART.shivParvati1,
     data: {
       title: "Nandini & Rudra",
@@ -333,6 +338,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "Shiv–Parvati",
     name: "Sacred Bond",
+    photo_query: "indian bride and groom",
     preview: ART.shivParvati3,
     data: {
       title: "Priya & Shankar",
@@ -360,6 +366,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "Vishnu–Lakshmi",
     name: "Gaja Lakshmi",
+    photo_query: "lotus flowers",
     preview: ART.vishnuLakshmi1,
     data: {
       title: "Harini & Srinivas",
@@ -388,6 +395,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "Shiv–Parvati",
     name: "Kailash Blessings",
+    photo_query: "marigold flowers",
     preview: ART.shivParvati2,
     data: {
       title: "Gauri & Mahesh",
@@ -415,6 +423,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "Ram–Sita",
     name: "Sitaram Vivah",
+    photo_query: "indian wedding mandap",
     preview: BG.paperRamSita,
     data: {
       title: "Janaki & Raghav",
@@ -441,6 +450,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "Vishnu–Lakshmi",
     name: "Lakshmi Narayan",
+    photo_query: "south indian bride",
     preview: ART.vishnuLakshmi2,
     data: {
       title: "Shreya & Narayan",
@@ -467,6 +477,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "Nikah",
     name: "Garland Nikah",
+    photo_query: "muslim wedding",
     preview: ART.nikah,
     data: {
       title: "Ayesha & Imran",
@@ -494,6 +505,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "North Indian",
     name: "Mehndi Night",
+    photo_query: "mehndi henna",
     preview: BG.paperMehndi,
     data: {
       title: "Mehndi & Sangeet",
@@ -519,6 +531,7 @@ export const TEMPLATES = [
     id: "wed-classic",
     event_type: "wedding",
     name: "Classic Ivory",
+    photo_query: "wedding flowers",
     preview: BACKGROUND_LIBRARY.wedding[0],
     data: {
       title: "Anna & Ethan",
@@ -541,6 +554,7 @@ export const TEMPLATES = [
     id: "wed-silk",
     event_type: "wedding",
     name: "Silk & Blush",
+    photo_query: "indian wedding couple",
     preview: BACKGROUND_LIBRARY.wedding[2],
     data: {
       title: "Priya & Arjun",
@@ -565,6 +579,7 @@ export const TEMPLATES = [
     id: "bday-joy",
     event_type: "birthday",
     name: "Confetti Joy",
+    photo_query: "birthday confetti",
     preview: BACKGROUND_LIBRARY.birthday[0],
     data: {
       title: "Maya turns 8!",
@@ -589,6 +604,7 @@ export const TEMPLATES = [
     id: "bday-adult",
     event_type: "birthday",
     name: "Golden Thirty",
+    photo_query: "birthday party celebration",
     preview: BACKGROUND_LIBRARY.birthday[1],
     data: {
       title: "Three Zero",
@@ -612,6 +628,7 @@ export const TEMPLATES = [
     id: "bday-bunting",
     event_type: "birthday",
     name: "Bunting Party",
+    photo_query: "kids birthday party",
     preview: BG.bunting,
     data: {
       title: "Kiara turns 7",
@@ -636,6 +653,7 @@ export const TEMPLATES = [
     id: "bday-balloons",
     event_type: "birthday",
     name: "Balloon Bash",
+    photo_query: "colorful balloons",
     preview: IMG.balloons,
     data: {
       title: "Aarav is 5!",
@@ -660,6 +678,7 @@ export const TEMPLATES = [
     id: "bday-sprinkles",
     event_type: "birthday",
     name: "Sweet Sixteen",
+    photo_query: "birthday party friends",
     preview: IMG.confetti,
     data: {
       title: "Sweet Sixteen",
@@ -684,6 +703,7 @@ export const TEMPLATES = [
     id: "bday-cake",
     event_type: "birthday",
     name: "Rainbow Cake",
+    photo_query: "birthday cake",
     preview: IMG.rainbowCake,
     data: {
       title: "One Year Old!",
@@ -708,6 +728,7 @@ export const TEMPLATES = [
     id: "bday-tropical",
     event_type: "birthday",
     name: "Tropical Fiesta",
+    photo_query: "tropical party",
     preview: IMG.pineappleParty,
     data: {
       title: "Party Like It's 40",
@@ -732,6 +753,7 @@ export const TEMPLATES = [
     id: "baby-neutral",
     event_type: "baby_shower",
     name: "Soft Neutral",
+    photo_query: "baby shower",
     preview: BACKGROUND_LIBRARY.baby_shower[0],
     data: {
       title: "Baby on the way",
@@ -756,6 +778,7 @@ export const TEMPLATES = [
     id: "baby-twinkle",
     event_type: "baby_shower",
     name: "Twinkle Little Star",
+    photo_query: "newborn baby",
     preview: BG.babyTwinkle,
     data: {
       title: "Twinkle Twinkle",
@@ -781,6 +804,7 @@ export const TEMPLATES = [
     id: "baby-oh-baby",
     event_type: "baby_shower",
     name: "Oh Baby!",
+    photo_query: "baby shoes",
     preview: BG.babyOhBaby,
     data: {
       title: "Oh Baby!",
@@ -806,6 +830,7 @@ export const TEMPLATES = [
     id: "anniv-sunset",
     event_type: "anniversary",
     name: "Ten Years of Us",
+    photo_query: "couple sunset",
     preview: IMG.weddingChairs,
     data: {
       title: "Ten Years of Us",
@@ -829,6 +854,7 @@ export const TEMPLATES = [
     id: "anniv-lanterns",
     event_type: "anniversary",
     name: "Lantern Garden",
+    photo_query: "fairy lights",
     preview: ART.annivLanterns,
     data: {
       title: "Twenty Years",
@@ -854,6 +880,7 @@ export const TEMPLATES = [
     id: "anniv-terracotta",
     event_type: "anniversary",
     name: "Terracotta Arch",
+    photo_query: "couple dinner",
     preview: BG.annivTerracotta,
     data: {
       title: "Still Us",
@@ -877,6 +904,7 @@ export const TEMPLATES = [
     id: "anniv-midnight",
     event_type: "anniversary",
     name: "Midnight Gold",
+    photo_query: "champagne toast",
     preview: BG.annivMidnight,
     data: {
       title: "Thirty Years",
@@ -901,6 +929,7 @@ export const TEMPLATES = [
     id: "anniv-ruby",
     event_type: "anniversary",
     name: "Ruby Forty",
+    photo_query: "red roses",
     preview: IMG.heartsBokeh,
     data: {
       title: "Forty Years",
@@ -925,6 +954,7 @@ export const TEMPLATES = [
     id: "anniv-golden",
     event_type: "anniversary",
     name: "Golden Fifty",
+    photo_query: "elderly couple",
     preview: BG.goldenIvory,
     data: {
       title: "50 Golden Years",
@@ -949,6 +979,7 @@ export const TEMPLATES = [
     id: "anniv-lux",
     event_type: "anniversary",
     name: "Twenty Five",
+    photo_query: "anniversary celebration",
     preview: BACKGROUND_LIBRARY.anniversary[0],
     data: {
       title: "25 Years",
@@ -972,6 +1003,7 @@ export const TEMPLATES = [
     id: "house-jasmine",
     event_type: "housewarming",
     name: "Jasmine & Brass",
+    photo_query: "jasmine flowers",
     preview: ART.houseJasmine,
     data: {
       title: "House Warming",
@@ -997,6 +1029,7 @@ export const TEMPLATES = [
     id: "house-griha-door",
     event_type: "housewarming",
     name: "Gruhapravesam",
+    photo_query: "indian home entrance",
     preview: ART.houseGrihaDoor,
     data: {
       title: "Gruhapravesam",
@@ -1023,6 +1056,7 @@ export const TEMPLATES = [
     id: "house-lotus-arch",
     event_type: "housewarming",
     name: "Lotus Arch",
+    photo_query: "pink lotus",
     preview: ART.houseLotusArch,
     data: {
       title: "Griha Pravesh",
@@ -1048,6 +1082,7 @@ export const TEMPLATES = [
     id: "house-key-tag",
     event_type: "housewarming",
     name: "Key to Our Home",
+    photo_query: "house keys",
     preview: ART.houseKeyTag,
     data: {
       title: "Housewarming",
@@ -1072,6 +1107,7 @@ export const TEMPLATES = [
     id: "house-griha-pravesh",
     event_type: "housewarming",
     name: "Griha Pravesh",
+    photo_query: "diya lamp",
     preview: BG.houseGrihaPravesh,
     data: {
       title: "Griha Pravesh",
@@ -1097,6 +1133,7 @@ export const TEMPLATES = [
     id: "house-sweet-home",
     event_type: "housewarming",
     name: "Home Sweet Home",
+    photo_query: "cozy home interior",
     preview: BG.houseSweetHome,
     data: {
       title: "We've Moved!",
@@ -1122,6 +1159,7 @@ export const TEMPLATES = [
     id: "house-plants",
     event_type: "housewarming",
     name: "Fresh Start",
+    photo_query: "house plants",
     preview: BG.housePlants,
     data: {
       title: "Home at Last",
@@ -1146,6 +1184,7 @@ export const TEMPLATES = [
     id: "corp-summit",
     event_type: "corporate",
     name: "Corporate Summit",
+    photo_query: "business conference",
     preview: BACKGROUND_LIBRARY.corporate[0],
     data: {
       title: "Vertex Summit 2026",
@@ -1169,6 +1208,7 @@ export const TEMPLATES = [
     id: "corp-launch",
     event_type: "corporate",
     name: "Product Launch",
+    photo_query: "product launch event",
     preview: IMG.skyscrapers,
     data: {
       title: "Meet Nova X",
@@ -1193,6 +1233,7 @@ export const TEMPLATES = [
     id: "corp-gala",
     event_type: "corporate",
     name: "Annual Awards Gala",
+    photo_query: "gala dinner",
     preview: IMG.galaBanquet,
     data: {
       title: "Excellence Awards 2026",
@@ -1217,6 +1258,7 @@ export const TEMPLATES = [
     id: "corp-techconf",
     event_type: "corporate",
     name: "Tech Conference",
+    photo_query: "tech conference",
     preview: IMG.microphone,
     data: {
       title: "DevForward 2027",
@@ -1240,6 +1282,7 @@ export const TEMPLATES = [
     id: "corp-townhall",
     event_type: "corporate",
     name: "Quarterly Town Hall",
+    photo_query: "office team meeting",
     preview: IMG.skyline,
     data: {
       title: "Q4 Town Hall",
@@ -1260,6 +1303,25 @@ export const TEMPLATES = [
     },
   },
 ];
+
+// Default stock-photo searches per event, used when an invitation's background
+// doesn't match a template's (e.g. the user picked their own picture).
+export const EVENT_PHOTO_QUERIES = {
+  wedding: "indian wedding",
+  birthday: "birthday party",
+  baby_shower: "baby shower",
+  anniversary: "anniversary celebration",
+  housewarming: "new home",
+  corporate: "business event",
+};
+
+// Theme for the editor's stock-photo search: the template this invitation came from
+// (matched by its background), else the event's default.
+export function photoQueryFor(inv) {
+  if (!inv) return "";
+  const tpl = TEMPLATES.find((t) => t.event_type === inv.event_type && t.data.background_url === inv.background_url);
+  return tpl?.photo_query || EVENT_PHOTO_QUERIES[inv.event_type] || "celebration";
+}
 
 export function templatesForType(type) {
   return TEMPLATES.filter((t) => t.event_type === type);

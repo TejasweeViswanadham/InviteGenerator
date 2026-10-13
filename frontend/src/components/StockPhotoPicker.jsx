@@ -1,0 +1,132 @@
+import { useEffect, useState } from "react";
+import api, { errorMessage } from "@/lib/api";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { PHOTO_LIBRARY } from "@/lib/templates";
+import { Loader2, Search } from "lucide-react";
+
+/**
+ * Free stock photos (Pexels, via our backend) for "Photos on canvas".
+ *
+ * Opens on the invitation's theme (`themeQuery`, from its template) and lets the user
+ * search anything else. If photo search isn't configured on the server, it falls back
+ * to the small built-in PHOTO_LIBRARY.
+ */
+export default function StockPhotoPicker({ themeQuery, eventQuery, onPick }) {
+  const [input, setInput] = useState(themeQuery);
+  const [query, setQuery] = useState(themeQuery);
+  const [photos, setPhotos] = useState([]);
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [unavailable, setUnavailable] = useState(false);
+
+  // A new theme (the user switched background/event) restarts the search on it.
+  useEffect(() => {
+    setInput(themeQuery);
+    setPage(1);
+    setPhotos([]);
+    setQuery(themeQuery);
+  }, [themeQuery]);
+
+  useEffect(() => {
+    if (!query) return undefined;
+    let cancelled = false;
+    setLoading(true);
+    setError("");
+    api.get("/stock-photos", { params: { query, page, per_page: 24 } })
+      .then(({ data }) => {
+        if (cancelled) return;
+        setPhotos((prev) => (page === 1 ? data.photos : [...prev, ...data.photos]));
+        setHasMore(data.has_more);
+      })
+      .catch((err) => {
+        if (cancelled) return;
+        if (err?.response?.status === 503) setUnavailable(true);
+        else setError(errorMessage(err, "Couldn't load photos"));
+      })
+      .finally(() => !cancelled && setLoading(false));
+    return () => { cancelled = true; };
+  }, [query, page]);
+
+  const search = (q) => {
+    const next = (q ?? input).trim();
+    setInput(next);
+    if (!next || next === query) return;
+    setPage(1);
+    setPhotos([]);
+    setQuery(next);
+  };
+
+  if (unavailable) {
+    return (
+      <div className="grid grid-cols-4 gap-2">
+        {Object.values(PHOTO_LIBRARY).flat().map((url) => (
+          <button key={url} onClick={() => onPick(url)}
+            className="overflow-hidden rounded-lg border border-stone-200 smooth hover:border-[#D97757]"
+            data-testid="photo-lib-btn">
+            <img src={url} alt="" className="h-16 w-full object-cover" />
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  const chips = [...new Set([themeQuery, eventQuery].filter(Boolean))];
+
+  return (
+    <div data-testid="stock-photo-picker">
+      <form className="relative" onSubmit={(e) => { e.preventDefault(); search(); }}>
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-stone-400" />
+        <Input
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          placeholder="Search free photos…"
+          className="rounded-full pl-9 text-sm"
+          data-testid="stock-photo-search"
+        />
+      </form>
+      <div className="mt-2 flex flex-wrap gap-1.5">
+        {chips.map((c) => (
+          <button key={c} onClick={() => search(c)}
+            className={`rounded-full border px-2.5 py-0.5 text-[11px] smooth ${query === c ? "border-[#D97757] bg-[#D97757]/10 text-[#D97757]" : "border-stone-200 text-stone-600 hover:border-[#D97757]"}`}>
+            {c}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {photos.map((p) => (
+          <button key={p.id} onClick={() => onPick(p.url)} title={`${p.alt || "Photo"} · by ${p.photographer}`}
+            className="group relative overflow-hidden rounded-lg border border-stone-200 smooth hover:border-[#D97757]"
+            style={{ background: p.avg_color }}
+            data-testid="stock-photo-btn">
+            <img src={p.thumb} alt={p.alt} loading="lazy" className="h-20 w-full object-cover" />
+            <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-black/50 px-1 py-0.5 text-[9px] text-white opacity-0 group-hover:opacity-100 smooth">
+              {p.photographer}
+            </span>
+          </button>
+        ))}
+        {loading && Array.from({ length: photos.length ? 3 : 9 }, (_, i) => (
+          <div key={`sk${i}`} className="h-20 animate-pulse rounded-lg bg-stone-100" />
+        ))}
+      </div>
+      {!loading && !error && photos.length === 0 && (
+        <p className="mt-3 text-center text-xs text-stone-500">No photos found. Try another search.</p>
+      )}
+      {error && <p className="mt-3 text-center text-xs text-red-600">{error}</p>}
+      {hasMore && !loading && (
+        <Button variant="outline" size="sm" className="mt-3 w-full rounded-full" onClick={() => setPage((n) => n + 1)}>
+          Load more
+        </Button>
+      )}
+      {loading && photos.length > 0 && (
+        <div className="mt-2 flex justify-center"><Loader2 className="h-4 w-4 animate-spin text-stone-400" /></div>
+      )}
+      <p className="mt-2 text-[10px] text-stone-400">
+        Free photos from <a href="https://www.pexels.com" target="_blank" rel="noreferrer" className="underline hover:text-[#D97757]">Pexels</a>
+      </p>
+    </div>
+  );
+}

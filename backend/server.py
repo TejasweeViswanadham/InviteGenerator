@@ -9,6 +9,7 @@ Sections:
   6. Guests + RSVP + analytics
   7. Email delivery (Resend)
   8. File uploads (photos, audio)
+ 8b. Stock photos (Pexels)
   9. AI copywriter (Claude)
  10. App wiring
 """
@@ -732,6 +733,73 @@ async def download_file(
         logger.exception("File download failed")
         raise HTTPException(status_code=502, detail=f"Storage error: {e}")
     return Response(content=data, media_type=record.get("content_type") or ct or "application/octet-stream")
+
+
+# --------------------------------------------------------------------------
+# 8b. Stock photos (Pexels) — free photos for the editor's "Photos on canvas"
+# --------------------------------------------------------------------------
+PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY", "").strip()
+_PEXELS_TTL_SECONDS = 3600
+_pexels_cache: Dict[tuple, tuple] = {}  # (query, page, per_page) -> (expires_at, payload)
+
+
+def _pexels_search(query: str, page: int, per_page: int) -> dict:
+    import requests as _req
+    resp = _req.get(
+        "https://api.pexels.com/v1/search",
+        params={"query": query, "page": page, "per_page": per_page},
+        headers={"Authorization": PEXELS_API_KEY},
+        timeout=15,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+@api_router.get("/stock-photos")
+async def stock_photos(
+    query: str = Query(..., min_length=1, max_length=80),
+    page: int = Query(1, ge=1, le=50),
+    per_page: int = Query(24, ge=1, le=40),
+    user: dict = Depends(get_current_user),
+):
+    """Search Pexels on the user's behalf so the API key stays on the server.
+    Results are cached for an hour to stay well inside Pexels' rate limits."""
+    if not PEXELS_API_KEY:
+        raise HTTPException(status_code=503, detail="Photo search isn't configured yet (missing PEXELS_API_KEY).")
+    key = (query.strip().lower(), page, per_page)
+    now = datetime.now(timezone.utc).timestamp()
+    cached = _pexels_cache.get(key)
+    if cached and cached[0] > now:
+        return cached[1]
+    try:
+        raw = await asyncio.to_thread(_pexels_search, key[0], page, per_page)
+    except Exception as e:
+        status = getattr(getattr(e, "response", None), "status_code", None)
+        if status == 429:
+            raise HTTPException(status_code=429, detail="Photo search is busy right now. Please try again shortly.")
+        logger.exception("Pexels search failed")
+        raise HTTPException(status_code=502, detail="Photo search failed. Please try again.")
+    payload = {
+        "photos": [
+            {
+                "id": p["id"],
+                "thumb": p["src"]["medium"],
+                "url": p["src"]["large"],
+                "alt": p.get("alt") or "",
+                "photographer": p.get("photographer") or "",
+                "photographer_url": p.get("photographer_url") or "",
+                "page_url": p.get("url") or "",
+                "avg_color": p.get("avg_color") or "#E7E5E4",
+            }
+            for p in raw.get("photos", [])
+        ],
+        "page": page,
+        "has_more": bool(raw.get("next_page")),
+    }
+    if len(_pexels_cache) > 500:
+        _pexels_cache.clear()
+    _pexels_cache[key] = (now + _PEXELS_TTL_SECONDS, payload)
+    return payload
 
 
 # --------------------------------------------------------------------------
