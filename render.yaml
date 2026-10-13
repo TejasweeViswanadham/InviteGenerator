@@ -31,5 +31,7 @@ services:
         sync: false
       - key: ANTHROPIC_API_KEY
         sync: false
+      - key: PIXABAY_API_KEY
+        sync: false
       - key: PEXELS_API_KEY
         sync: false

@@ -9,7 +9,7 @@ Sections:
   6. Guests + RSVP + analytics
   7. Email delivery (Resend)
   8. File uploads (photos, audio)
- 8b. Stock photos (Pexels)
+ 8b. Stock photos (Pixabay / Pexels)
   9. AI copywriter (Claude)
  10. App wiring
 """
@@ -668,6 +668,11 @@ async def _do_upload(
     if ct not in allowed:
         raise HTTPException(status_code=415, detail=f"Unsupported content type: {ct}")
     ext = (file.filename or "").rsplit(".", 1)[-1].lower() if file.filename and "." in file.filename else "bin"
+    return await _store_file(user, kind, data, ct, ext, file.filename)
+
+
+async def _store_file(user: dict, kind: str, data: bytes, ct: str, ext: str, filename: Optional[str]) -> dict:
+    """Save bytes to object storage and register them as one of the user's files."""
     path = f"{APP_NAME}/uploads/{user['id']}/{kind}/{uuid.uuid4().hex}.{ext}"
     try:
         result = await asyncio.to_thread(put_object, path, data, ct)
@@ -679,7 +684,7 @@ async def _do_upload(
         "user_id": user["id"],
         "kind": kind,
         "storage_path": result["path"],
-        "original_filename": file.filename,
+        "original_filename": filename,
         "content_type": ct,
         "size": result.get("size", len(data)),
         "is_deleted": False,
@@ -736,11 +741,47 @@ async def download_file(
 
 
 # --------------------------------------------------------------------------
-# 8b. Stock photos (Pexels) — free photos for the editor's "Photos on canvas"
+# 8b. Stock photos — free photos for the editor's "Photos on canvas"
 # --------------------------------------------------------------------------
+# Pixabay is used when PIXABAY_API_KEY is set, otherwise Pexels (PEXELS_API_KEY).
+# Pixabay doesn't allow permanent hotlinking, so a picked photo is copied into our own
+# storage (POST /stock-photos/import) before it goes on the card. Pexels URLs may be
+# used directly.
+PIXABAY_API_KEY = os.environ.get("PIXABAY_API_KEY", "").strip()
 PEXELS_API_KEY = os.environ.get("PEXELS_API_KEY", "").strip()
-_PEXELS_TTL_SECONDS = 3600
-_pexels_cache: Dict[tuple, tuple] = {}  # (query, page, per_page) -> (expires_at, payload)
+STOCK_PROVIDER = "pixabay" if PIXABAY_API_KEY else ("pexels" if PEXELS_API_KEY else "")
+_STOCK_TTL_SECONDS = 24 * 3600  # Pixabay requires caching searches for 24 hours
+_stock_cache: Dict[tuple, tuple] = {}  # (query, page, per_page) -> (expires_at, payload)
+_IMPORT_HOSTS = ("pixabay.com", "cdn.pixabay.com")
+
+
+def _pixabay_search(query: str, page: int, per_page: int) -> dict:
+    import requests as _req
+    resp = _req.get(
+        "https://pixabay.com/api/",
+        params={"key": PIXABAY_API_KEY, "q": query, "image_type": "photo", "safesearch": "true",
+                "page": page, "per_page": per_page},
+        timeout=15,
+    )
+    resp.raise_for_status()
+    raw = resp.json()
+    return {
+        "photos": [
+            {
+                "id": h["id"],
+                "thumb": h["webformatURL"].replace("_640", "_340"),
+                "url": h.get("largeImageURL") or h["webformatURL"],
+                "alt": h.get("tags") or "",
+                "photographer": h.get("user") or "",
+                "photographer_url": f"https://pixabay.com/users/{h.get('user', '')}-{h.get('user_id', '')}/",
+                "page_url": h.get("pageURL") or "",
+                "avg_color": "#E7E5E4",
+                "import": True,
+            }
+            for h in raw.get("hits", [])
+        ],
+        "has_more": page * per_page < int(raw.get("totalHits") or 0),
+    }
 
 
 def _pexels_search(query: str, page: int, per_page: int) -> dict:
@@ -752,34 +793,8 @@ def _pexels_search(query: str, page: int, per_page: int) -> dict:
         timeout=15,
     )
     resp.raise_for_status()
-    return resp.json()
-
-
-@api_router.get("/stock-photos")
-async def stock_photos(
-    query: str = Query(..., min_length=1, max_length=80),
-    page: int = Query(1, ge=1, le=50),
-    per_page: int = Query(24, ge=1, le=40),
-    user: dict = Depends(get_current_user),
-):
-    """Search Pexels on the user's behalf so the API key stays on the server.
-    Results are cached for an hour to stay well inside Pexels' rate limits."""
-    if not PEXELS_API_KEY:
-        raise HTTPException(status_code=503, detail="Photo search isn't configured yet (missing PEXELS_API_KEY).")
-    key = (query.strip().lower(), page, per_page)
-    now = datetime.now(timezone.utc).timestamp()
-    cached = _pexels_cache.get(key)
-    if cached and cached[0] > now:
-        return cached[1]
-    try:
-        raw = await asyncio.to_thread(_pexels_search, key[0], page, per_page)
-    except Exception as e:
-        status = getattr(getattr(e, "response", None), "status_code", None)
-        if status == 429:
-            raise HTTPException(status_code=429, detail="Photo search is busy right now. Please try again shortly.")
-        logger.exception("Pexels search failed")
-        raise HTTPException(status_code=502, detail="Photo search failed. Please try again.")
-    payload = {
+    raw = resp.json()
+    return {
         "photos": [
             {
                 "id": p["id"],
@@ -790,16 +805,79 @@ async def stock_photos(
                 "photographer_url": p.get("photographer_url") or "",
                 "page_url": p.get("url") or "",
                 "avg_color": p.get("avg_color") or "#E7E5E4",
+                "import": False,
             }
             for p in raw.get("photos", [])
         ],
-        "page": page,
         "has_more": bool(raw.get("next_page")),
     }
-    if len(_pexels_cache) > 500:
-        _pexels_cache.clear()
-    _pexels_cache[key] = (now + _PEXELS_TTL_SECONDS, payload)
+
+
+def _upstream_error(e: Exception, what: str) -> HTTPException:
+    status = getattr(getattr(e, "response", None), "status_code", None)
+    if status == 429:
+        return HTTPException(status_code=429, detail="Photo search is busy right now. Please try again shortly.")
+    logger.exception("%s failed", what)
+    return HTTPException(status_code=502, detail=f"{what} failed. Please try again.")
+
+
+@api_router.get("/stock-photos")
+async def stock_photos(
+    query: str = Query(..., min_length=1, max_length=80),
+    page: int = Query(1, ge=1, le=50),
+    per_page: int = Query(24, ge=3, le=40),
+    user: dict = Depends(get_current_user),
+):
+    """Search free stock photos on the user's behalf so the API key stays on the server."""
+    if not STOCK_PROVIDER:
+        raise HTTPException(status_code=503, detail="Photo search isn't configured yet (missing PIXABAY_API_KEY).")
+    key = (query.strip().lower(), page, per_page)
+    now = datetime.now(timezone.utc).timestamp()
+    cached = _stock_cache.get(key)
+    if cached and cached[0] > now:
+        return cached[1]
+    search = _pixabay_search if STOCK_PROVIDER == "pixabay" else _pexels_search
+    try:
+        result = await asyncio.to_thread(search, key[0], page, per_page)
+    except Exception as e:
+        raise _upstream_error(e, "Photo search")
+    payload = {**result, "page": page, "provider": STOCK_PROVIDER}
+    if len(_stock_cache) > 500:
+        _stock_cache.clear()
+    _stock_cache[key] = (now + _STOCK_TTL_SECONDS, payload)
     return payload
+
+
+class StockImportRequest(BaseModel):
+    url: str
+
+
+def _download_stock(url: str) -> tuple:
+    import requests as _req
+    resp = _req.get(url, timeout=30, stream=True)
+    resp.raise_for_status()
+    ct = (resp.headers.get("Content-Type") or "").split(";")[0].strip()
+    data = resp.raw.read(MAX_IMAGE + 1, decode_content=True)
+    return data, ct
+
+
+@api_router.post("/stock-photos/import")
+async def import_stock_photo(req: StockImportRequest, user: dict = Depends(get_current_user)):
+    """Copy a picked Pixabay photo into our storage; returns the same shape as /upload/photo."""
+    from urllib.parse import urlparse
+    host = (urlparse(req.url).hostname or "").lower()
+    if urlparse(req.url).scheme != "https" or host not in _IMPORT_HOSTS:
+        raise HTTPException(status_code=400, detail="Only photos from the photo search can be imported.")
+    try:
+        data, ct = await asyncio.to_thread(_download_stock, req.url)
+    except Exception as e:
+        raise _upstream_error(e, "Photo import")
+    if len(data) > MAX_IMAGE:
+        raise HTTPException(status_code=413, detail="Photo is too large.")
+    if ct not in ALLOWED_IMAGE:
+        raise HTTPException(status_code=415, detail=f"Unsupported content type: {ct}")
+    ext = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/gif": "gif"}.get(ct, "jpg")
+    return await _store_file(user, "photo", data, ct, ext, f"stock-{host}.{ext}")
 
 
 # --------------------------------------------------------------------------

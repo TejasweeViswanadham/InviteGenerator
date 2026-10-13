@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 import api, { errorMessage } from "@/lib/api";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -6,7 +7,9 @@ import { PHOTO_LIBRARY } from "@/lib/templates";
 import { Loader2, Search } from "lucide-react";
 
 /**
- * Free stock photos (Pexels, via our backend) for "Photos on canvas".
+ * Free stock photos (Pixabay or Pexels, via our backend) for "Photos on canvas".
+ * Pixabay photos are copied into our storage when picked (Pixabay forbids permanent
+ * hotlinking); Pexels photos are used straight from Pexels.
  *
  * Opens on the invitation's theme (`themeQuery`, from its template) and lets the user
  * search anything else. If photo search isn't configured on the server, it falls back
@@ -21,6 +24,8 @@ export default function StockPhotoPicker({ themeQuery, eventQuery, onPick }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [unavailable, setUnavailable] = useState(false);
+  const [provider, setProvider] = useState("");
+  const [importing, setImporting] = useState(null); // id of the photo being copied in
 
   // A new theme (the user switched background/event) restarts the search on it.
   useEffect(() => {
@@ -40,6 +45,7 @@ export default function StockPhotoPicker({ themeQuery, eventQuery, onPick }) {
         if (cancelled) return;
         setPhotos((prev) => (page === 1 ? data.photos : [...prev, ...data.photos]));
         setHasMore(data.has_more);
+        setProvider(data.provider);
       })
       .catch((err) => {
         if (cancelled) return;
@@ -73,6 +79,23 @@ export default function StockPhotoPicker({ themeQuery, eventQuery, onPick }) {
     );
   }
 
+  const pick = async (p) => {
+    if (!p.import) return onPick(p.url);
+    if (importing) return;
+    setImporting(p.id);
+    try {
+      const { data } = await api.post("/stock-photos/import", { url: p.url });
+      onPick(data.path);
+    } catch (err) {
+      toast.error(errorMessage(err, "Couldn't add that photo"));
+    } finally {
+      setImporting(null);
+    }
+  };
+
+  const credit = provider === "pexels"
+    ? { name: "Pexels", href: "https://www.pexels.com" }
+    : { name: "Pixabay", href: "https://pixabay.com" };
   const chips = [...new Set([themeQuery, eventQuery].filter(Boolean))];
 
   return (
@@ -98,11 +121,16 @@ export default function StockPhotoPicker({ themeQuery, eventQuery, onPick }) {
 
       <div className="mt-3 grid grid-cols-3 gap-2">
         {photos.map((p) => (
-          <button key={p.id} onClick={() => onPick(p.url)} title={`${p.alt || "Photo"} · by ${p.photographer}`}
+          <button key={p.id} onClick={() => pick(p)} title={`${p.alt || "Photo"} · by ${p.photographer}`}
             className="group relative overflow-hidden rounded-lg border border-stone-200 smooth hover:border-[#D97757]"
             style={{ background: p.avg_color }}
             data-testid="stock-photo-btn">
             <img src={p.thumb} alt={p.alt} loading="lazy" className="h-20 w-full object-cover" />
+            {importing === p.id && (
+              <span className="absolute inset-0 flex items-center justify-center bg-white/60">
+                <Loader2 className="h-5 w-5 animate-spin text-[#D97757]" />
+              </span>
+            )}
             <span className="pointer-events-none absolute inset-x-0 bottom-0 truncate bg-black/50 px-1 py-0.5 text-[9px] text-white opacity-0 group-hover:opacity-100 smooth">
               {p.photographer}
             </span>
@@ -125,7 +153,7 @@ export default function StockPhotoPicker({ themeQuery, eventQuery, onPick }) {
         <div className="mt-2 flex justify-center"><Loader2 className="h-4 w-4 animate-spin text-stone-400" /></div>
       )}
       <p className="mt-2 text-[10px] text-stone-400">
-        Free photos from <a href="https://www.pexels.com" target="_blank" rel="noreferrer" className="underline hover:text-[#D97757]">Pexels</a>
+        Free photos from <a href={credit.href} target="_blank" rel="noreferrer" className="underline hover:text-[#D97757]">{credit.name}</a>
       </p>
     </div>
   );
