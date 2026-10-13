@@ -24,7 +24,7 @@ import PremiumSite from "@/components/premium/PremiumSite";
 import PremiumPanel from "@/components/premium/PremiumPanel";
 import {
   BACKGROUND_LIBRARY, FONT_OPTIONS, COLOR_SWATCHES, EVENT_TYPES,
-  ENVELOPE_STYLES, EFFECT_OPTIONS, MUSIC_PRESETS as FALLBACK_PRESETS, EVENT_PHOTO_QUERIES, photoQueryFor,
+  ENVELOPE_STYLES, EFFECT_OPTIONS, MUSIC_PRESETS as FALLBACK_PRESETS, EVENT_PHOTO_QUERIES, EVENT_PHOTO_SUGGESTIONS, CURATED_PHOTO_EVENTS, photoQueryFor,
   fileUrl, shareUrl,
 } from "@/lib/templates";
 import StockPhotoPicker from "@/components/StockPhotoPicker";
@@ -417,6 +417,8 @@ export default function Editor() {
                 <StockPhotoPicker
                   themeQuery={photoQuery}
                   eventQuery={EVENT_PHOTO_QUERIES[data.event_type]}
+                  suggestions={EVENT_PHOTO_SUGGESTIONS[data.event_type]}
+                  curated={CURATED_PHOTO_EVENTS.includes(data.event_type)}
                   onPick={addPhotoFromLibrary}
                 />
                 <label className="mt-3 flex w-full cursor-pointer items-center justify-center gap-2 rounded-full border border-dashed border-stone-300 py-3 text-xs text-stone-600 hover:border-[#D97757] hover:text-[#D97757] smooth" data-testid="photo-upload-label">

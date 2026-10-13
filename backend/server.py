@@ -755,14 +755,13 @@ _stock_cache: Dict[tuple, tuple] = {}  # (query, page, per_page) -> (expires_at,
 _IMPORT_HOSTS = ("pixabay.com", "cdn.pixabay.com")
 
 
-def _pixabay_search(query: str, page: int, per_page: int) -> dict:
+def _pixabay_search(query: str, page: int, per_page: int, kind: str = "photo", curated: bool = False) -> dict:
     import requests as _req
-    resp = _req.get(
-        "https://pixabay.com/api/",
-        params={"key": PIXABAY_API_KEY, "q": query, "image_type": "photo", "safesearch": "true",
-                "page": page, "per_page": per_page},
-        timeout=15,
-    )
+    params = {"key": PIXABAY_API_KEY, "q": query, "image_type": kind, "safesearch": "true",
+              "order": "popular", "min_width": 800, "page": page, "per_page": per_page}
+    if curated:
+        params["editors_choice"] = "true"  # Pixabay's hand-picked, higher-quality images
+    resp = _req.get("https://pixabay.com/api/", params=params, timeout=15)
     resp.raise_for_status()
     raw = resp.json()
     return {
@@ -784,7 +783,7 @@ def _pixabay_search(query: str, page: int, per_page: int) -> dict:
     }
 
 
-def _pexels_search(query: str, page: int, per_page: int) -> dict:
+def _pexels_search(query: str, page: int, per_page: int, kind: str = "photo", curated: bool = False) -> dict:
     import requests as _req
     resp = _req.get(
         "https://api.pexels.com/v1/search",
@@ -826,22 +825,31 @@ async def stock_photos(
     query: str = Query(..., min_length=1, max_length=80),
     page: int = Query(1, ge=1, le=50),
     per_page: int = Query(24, ge=3, le=40),
+    kind: str = Query("photo", pattern="^(photo|illustration)$"),
+    curated: bool = Query(False),
     user: dict = Depends(get_current_user),
 ):
-    """Search free stock photos on the user's behalf so the API key stays on the server."""
+    """Search free stock photos on the user's behalf so the API key stays on the server.
+
+    `kind` picks photos or illustrations, and `curated` asks for Pixabay's Editor's Choice
+    (both Pixabay only). A curated first page with too few results falls back to all
+    results; the response's `curated` says which mode was used, for later pages."""
     if not STOCK_PROVIDER:
         raise HTTPException(status_code=503, detail="Photo search isn't configured yet (missing PIXABAY_API_KEY).")
-    key = (query.strip().lower(), page, per_page)
+    key = (query.strip().lower(), page, per_page, kind, curated)
     now = datetime.now(timezone.utc).timestamp()
     cached = _stock_cache.get(key)
     if cached and cached[0] > now:
         return cached[1]
     search = _pixabay_search if STOCK_PROVIDER == "pixabay" else _pexels_search
     try:
-        result = await asyncio.to_thread(search, key[0], page, per_page)
+        result = await asyncio.to_thread(search, key[0], page, per_page, kind, curated)
+        if curated and page == 1 and len(result["photos"]) < 6:
+            curated = False
+            result = await asyncio.to_thread(search, key[0], page, per_page, kind, False)
     except Exception as e:
         raise _upstream_error(e, "Photo search")
-    payload = {**result, "page": page, "provider": STOCK_PROVIDER}
+    payload = {**result, "page": page, "provider": STOCK_PROVIDER, "curated": curated}
     if len(_stock_cache) > 500:
         _stock_cache.clear()
     _stock_cache[key] = (now + _STOCK_TTL_SECONDS, payload)

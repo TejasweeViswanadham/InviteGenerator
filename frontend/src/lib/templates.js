@@ -203,7 +203,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "South Indian",
     name: "Temple Gopuram",
-    photo_query: "south indian temple wedding",
+    photo_query: "indian temple architecture",
     preview: IMG.gopuram,
     data: {
       title: "Sravani & Venkat",
@@ -229,7 +229,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "South Indian",
     name: "Kerala Backwaters",
-    photo_query: "kerala wedding",
+    photo_query: "kerala backwaters",
     preview: IMG.backwaters,
     data: {
       title: "Anjali & Nikhil",
@@ -254,7 +254,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "South Indian",
     name: "Kolam & Kuthuvilakku",
-    photo_query: "kolam rangoli",
+    photo_query: "rangoli",
     preview: ART.kolam,
     data: {
       title: "Meera & Arvind",
@@ -282,7 +282,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "South Indian",
     name: "Srinivasa Kalyanam",
-    photo_query: "south indian wedding ceremony",
+    photo_query: "marigold garland",
     preview: ART.kalyanam,
     data: {
       title: "Sravya & Venkat",
@@ -310,7 +310,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "Shiv–Parvati",
     name: "Shiv Shakti",
-    photo_query: "hindu wedding ceremony",
+    photo_query: "lotus flower",
     preview: ART.shivParvati1,
     data: {
       title: "Nandini & Rudra",
@@ -338,7 +338,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "Shiv–Parvati",
     name: "Sacred Bond",
-    photo_query: "indian bride and groom",
+    photo_query: "rose petals",
     preview: ART.shivParvati3,
     data: {
       title: "Priya & Shankar",
@@ -366,7 +366,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "Vishnu–Lakshmi",
     name: "Gaja Lakshmi",
-    photo_query: "lotus flowers",
+    photo_query: "pink lotus",
     preview: ART.vishnuLakshmi1,
     data: {
       title: "Harini & Srinivas",
@@ -423,7 +423,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "Ram–Sita",
     name: "Sitaram Vivah",
-    photo_query: "indian wedding mandap",
+    photo_query: "diya lamps",
     preview: BG.paperRamSita,
     data: {
       title: "Janaki & Raghav",
@@ -450,7 +450,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "Vishnu–Lakshmi",
     name: "Lakshmi Narayan",
-    photo_query: "south indian bride",
+    photo_query: "jasmine flowers",
     preview: ART.vishnuLakshmi2,
     data: {
       title: "Shreya & Narayan",
@@ -477,7 +477,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "Nikah",
     name: "Garland Nikah",
-    photo_query: "muslim wedding",
+    photo_query: "moroccan lanterns",
     preview: ART.nikah,
     data: {
       title: "Ayesha & Imran",
@@ -505,7 +505,7 @@ export const TEMPLATES = [
     event_type: "wedding",
     style: "North Indian",
     name: "Mehndi Night",
-    photo_query: "mehndi henna",
+    photo_query: "marigold decoration",
     preview: BG.paperMehndi,
     data: {
       title: "Mehndi & Sangeet",
@@ -531,7 +531,7 @@ export const TEMPLATES = [
     id: "wed-classic",
     event_type: "wedding",
     name: "Classic Ivory",
-    photo_query: "wedding flowers",
+    photo_query: "white roses",
     preview: BACKGROUND_LIBRARY.wedding[0],
     data: {
       title: "Anna & Ethan",
@@ -554,7 +554,7 @@ export const TEMPLATES = [
     id: "wed-silk",
     event_type: "wedding",
     name: "Silk & Blush",
-    photo_query: "indian wedding couple",
+    photo_query: "wedding flowers decoration",
     preview: BACKGROUND_LIBRARY.wedding[2],
     data: {
       title: "Priya & Arjun",
@@ -1029,7 +1029,7 @@ export const TEMPLATES = [
     id: "house-griha-door",
     event_type: "housewarming",
     name: "Gruhapravesam",
-    photo_query: "indian home entrance",
+    photo_query: "rangoli",
     preview: ART.houseGrihaDoor,
     data: {
       title: "Gruhapravesam",
@@ -1107,7 +1107,7 @@ export const TEMPLATES = [
     id: "house-griha-pravesh",
     event_type: "housewarming",
     name: "Griha Pravesh",
-    photo_query: "diya lamp",
+    photo_query: "diya lamps",
     preview: BG.houseGrihaPravesh,
     data: {
       title: "Griha Pravesh",
@@ -1133,7 +1133,7 @@ export const TEMPLATES = [
     id: "house-sweet-home",
     event_type: "housewarming",
     name: "Home Sweet Home",
-    photo_query: "cozy home interior",
+    photo_query: "cozy living room",
     preview: BG.houseSweetHome,
     data: {
       title: "We've Moved!",
@@ -1307,13 +1307,33 @@ export const TEMPLATES = [
 // Default stock-photo searches per event, used when an invitation's background
 // doesn't match a template's (e.g. the user picked their own picture).
 export const EVENT_PHOTO_QUERIES = {
-  wedding: "indian wedding",
+  wedding: "wedding flowers decoration",
   birthday: "birthday party",
   baby_shower: "baby shower",
   anniversary: "anniversary celebration",
-  housewarming: "new home",
+  housewarming: "diya lamps",
   corporate: "business event",
 };
+
+// Extra search chips for events where stock photos skew towards people: décor, flowers
+// and illustrations that match the look of our own templates. `kind` switches the
+// picker to Illustrations.
+export const EVENT_PHOTO_SUGGESTIONS = {
+  wedding: [
+    { q: "marigold garland" }, { q: "rose petals" }, { q: "jasmine flowers" }, { q: "diya lamps" },
+    { q: "rangoli" }, { q: "wedding flowers decoration" },
+    { q: "watercolor flowers", kind: "illustration" }, { q: "gold mandala", kind: "illustration" },
+    { q: "floral frame", kind: "illustration" },
+  ],
+  housewarming: [
+    { q: "diya lamps" }, { q: "marigold flowers" }, { q: "rangoli" }, { q: "brass lamp" },
+    { q: "house plants" }, { q: "cozy living room" },
+    { q: "watercolor house", kind: "illustration" }, { q: "mandala", kind: "illustration" },
+  ],
+};
+
+// Events where results are limited to Pixabay's Editor's Choice (with fallback).
+export const CURATED_PHOTO_EVENTS = ["wedding", "housewarming"];
 
 // Theme for the editor's stock-photo search: the template this invitation came from
 // (matched by its background), else the event's default.
