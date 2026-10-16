@@ -18,6 +18,7 @@ from __future__ import annotations
 import asyncio
 import base64
 import hashlib
+import html
 import json
 import logging
 import os
@@ -35,13 +36,14 @@ from fastapi import (
     Depends,
     FastAPI,
     File,
+    Form,
     Header,
     HTTPException,
     Query,
     Request,
     UploadFile,
 )
-from fastapi.responses import Response
+from fastapi.responses import HTMLResponse, Response
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -195,6 +197,10 @@ class Invitation(InvitationBase):
     share_id: str
     created_at: str
     updated_at: str
+    # Snapshot shown as the link preview in WhatsApp etc. Set only via
+    # POST /invitations/{id}/preview, so autosave can't overwrite it.
+    preview_image: str = ""
+    preview_version: str = ""
 
 
 class AITextRequest(BaseModel):
@@ -435,6 +441,95 @@ async def public_invite(share_id: str, request: Request):
     except Exception as e:
         logger.warning("view tracking failed: %s", e)
     return doc
+
+
+# --- Link previews --------------------------------------------------------
+# Chat apps build link previews from Open Graph tags without running
+# JavaScript, so the static frontend can't provide per-invite tags. Guests
+# are sent to /api/s/{share_id}, which serves those tags and redirects
+# straight on to the real invite page.
+@api_router.post("/invitations/{inv_id}/preview")
+async def save_share_preview(
+    inv_id: str,
+    file: Optional[UploadFile] = File(None),
+    user: dict = Depends(get_current_user),
+):
+    inv = await db.invitations.find_one({"id": inv_id, "user_id": user["id"]}, {"_id": 0, "share_id": 1})
+    if not inv:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+    updates: Dict[str, Any] = {"preview_version": uuid.uuid4().hex[:8]}
+    if file is not None:
+        data = await file.read()
+        if len(data) > MAX_IMAGE:
+            raise HTTPException(status_code=413, detail="Preview image too large")
+        ct = file.content_type or ""
+        if ct not in ALLOWED_IMAGE:
+            raise HTTPException(status_code=415, detail=f"Unsupported content type: {ct}")
+        # One file per invitation, overwritten on every share.
+        path = f"{APP_NAME}/previews/{inv_id}.jpg"
+        try:
+            result = await asyncio.to_thread(put_object, path, data, ct)
+        except Exception as e:
+            logger.exception("Preview upload failed")
+            raise HTTPException(status_code=502, detail=f"Storage error: {e}")
+        updates["preview_image"] = result["path"]
+    await db.invitations.update_one({"id": inv_id}, {"$set": updates})
+    return {"share_id": inv["share_id"], **updates}
+
+
+def _og_image(url: str) -> str:
+    """Pad Cloudinary images to the 1200x630 shape link previews expect."""
+    marker = "/image/upload/"
+    if "res.cloudinary.com" in url and marker in url:
+        return url.replace(marker, f"{marker}c_pad,w_1200,h_630,b_auto,f_jpg,q_auto/", 1)
+    return url
+
+
+@api_router.get("/s/{share_id}", response_class=HTMLResponse)
+async def share_link(share_id: str):
+    inv = await db.invitations.find_one(
+        {"share_id": share_id},
+        {"_id": 0, "title": 1, "hosts": 1, "date_text": 1, "time_text": 1, "venue": 1,
+         "preview_image": 1, "background_url": 1},
+    )
+    if not inv:
+        raise HTTPException(status_code=404, detail="Invitation not found")
+    target = f"{APP_PUBLIC_BASE}/i/{share_id}"
+    title = inv.get("title") or "You're invited"
+    details = [inv.get(k, "").strip() for k in ("date_text", "time_text", "venue")]
+    description = " · ".join(["You're invited"] + [d for d in details if d])
+    image = inv.get("preview_image") or ""
+    if not image and str(inv.get("background_url", "")).startswith("http"):
+        image = inv["background_url"]
+
+    e = lambda v: html.escape(v, quote=True)  # noqa: E731
+    tags = [
+        '<meta property="og:type" content="website">',
+        f'<meta property="og:title" content="{e(title)}">',
+        f'<meta property="og:description" content="{e(description)}">',
+        f'<meta name="description" content="{e(description)}">',
+    ]
+    if image:
+        tags += [
+            f'<meta property="og:image" content="{e(_og_image(image))}">',
+            '<meta property="og:image:width" content="1200">',
+            '<meta property="og:image:height" content="630">',
+            '<meta name="twitter:card" content="summary_large_image">',
+        ]
+    meta_tags = "\n".join(tags)
+    page = f"""<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{e(title)}</title>
+{meta_tags}
+<meta http-equiv="refresh" content="0;url={e(target)}">
+<script>location.replace({json.dumps(target)});</script>
+</head><body style="font-family:sans-serif;text-align:center;padding:3rem">
+<p>Opening your invitation…</p><p><a href="{e(target)}">Tap here if it doesn't open</a></p>
+</body></html>"""
+    # Short cache so edits show up; the ?v= in shared links busts app caches.
+    return HTMLResponse(page, headers={"Cache-Control": "public, max-age=300"})
 
 
 @api_router.post("/public/{share_id}/rsvp")

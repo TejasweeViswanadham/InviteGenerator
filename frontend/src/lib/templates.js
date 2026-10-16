@@ -1353,6 +1353,12 @@ export function shareUrl(shareId) {
   return `${window.location.origin}${process.env.PUBLIC_URL || ""}/i/${shareId}`;
 }
 
+// Link to send to guests: the backend serves a picture preview of the invite
+// to WhatsApp etc., then redirects to shareUrl. `version` busts their caches.
+export function previewLinkUrl(shareId, version) {
+  return `${process.env.REACT_APP_BACKEND_URL}/api/s/${shareId}?v=${version}`;
+}
+
 // Build a full file URL usable by <img>/<audio> for a stored file path
 export function fileUrl(pathOrUrl) {
   if (!pathOrUrl) return "";

@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { Mail, Trash2, Send, Eye, Users, CheckCircle, HelpCircle, XCircle, Clock, ArrowLeft } from "lucide-react";
 import ConfirmDialog from "@/components/ConfirmDialog";
-import { shareUrl } from "@/lib/templates";
+import { previewLinkUrl, shareUrl } from "@/lib/templates";
 
 export default function Guests() {
   const { id } = useParams();
@@ -120,7 +120,10 @@ export default function Guests() {
     );
   }
 
-  const shareLink = shareUrl(invite.share_id);
+  // Once the invite has been shared from the editor, use the link with a picture preview.
+  const shareLink = invite.preview_version
+    ? previewLinkUrl(invite.share_id, invite.preview_version)
+    : shareUrl(invite.share_id);
   const rsvp = analytics?.rsvp_counts || { yes: 0, no: 0, maybe: 0, pending: 0 };
 
   return (

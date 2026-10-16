@@ -25,7 +25,7 @@ import PremiumPanel from "@/components/premium/PremiumPanel";
 import {
   BACKGROUND_LIBRARY, FONT_OPTIONS, COLOR_SWATCHES, EVENT_TYPES,
   ENVELOPE_STYLES, EFFECT_OPTIONS, MUSIC_PRESETS as FALLBACK_PRESETS, EVENT_PHOTO_QUERIES, EVENT_PHOTO_SUGGESTIONS, CURATED_PHOTO_EVENTS, photoQueryFor,
-  fileUrl, shareUrl,
+  fileUrl, shareUrl, previewLinkUrl,
 } from "@/lib/templates";
 import StockPhotoPicker from "@/components/StockPhotoPicker";
 import { toPng, toJpeg } from "html-to-image";
@@ -244,10 +244,39 @@ export default function Editor() {
     if (saveTimer.current) { clearTimeout(saveTimer.current); saveTimer.current = null; }
     await save(false);
   };
+  // A snapshot of the card becomes the picture chat apps show with the link.
+  const [sharePreview, setSharePreview] = useState(null); // { url, file } once ready
+  const sharePreviewKey = useRef("");
+  const prepareSharePreview = async () => {
+    const key = JSON.stringify(latestData.current);
+    if (sharePreview && sharePreviewKey.current === key) return;
+    setSharePreview(null);
+    let file = null;
+    try {
+      if (data.layout !== "premium" && canvasRef.current) {
+        const jpg = await toJpeg(canvasRef.current, { pixelRatio: 2, cacheBust: true, quality: 0.85 });
+        const blob = await (await fetch(jpg)).blob();
+        file = new File([blob], `${safeName(data.title)}.jpg`, { type: "image/jpeg" });
+      }
+    } catch {} // no snapshot: the preview falls back to the background image
+    try {
+      const form = new FormData();
+      if (file) form.append("file", file);
+      const { data: out } = await api.post(`/invitations/${id}/preview`, form, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      sharePreviewKey.current = key;
+      setSharePreview({ url: previewLinkUrl(out.share_id, out.preview_version), file });
+    } catch {
+      // The plain guest link still works, just without a picture.
+      setSharePreview({ url: shareUrl(data.share_id), file });
+    }
+  };
   const openShare = async () => {
     // Flush pending save first so guests see the latest content.
     await flushSave();
     setShareOpen(true);
+    prepareSharePreview();
   };
   // Envelope, music and scratch-reveal only play on the guest page, so let the
   // owner open it. The window is opened before the save so popup blockers allow it.
@@ -628,7 +657,8 @@ export default function Editor() {
       <ShareDialog
         open={shareOpen}
         onOpenChange={setShareOpen}
-        url={shareUrl(data.share_id)}
+        url={sharePreview?.url}
+        imageFile={sharePreview?.file}
         title={data.title}
         invitationId={id}
         onPreview={previewAsGuest}
